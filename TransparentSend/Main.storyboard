@@ -115,7 +115,7 @@
                                     <action selector="sendTypeAct:" destination="BYZ-38-t0r" eventType="touchUpInside" id="a34-Y8-2uV"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="iAj-Wg-UGh">
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="iAj-Wg-UGh">
                                 <rect key="frame" x="165" y="256" width="99" height="30"/>
                                 <color key="backgroundColor" red="0.0" green="0.47843137250000001" blue="1" alpha="0.69817341549295775" colorSpace="custom" customColorSpace="sRGB"/>
                                 <constraints>
@@ -131,6 +131,9 @@
                                         <real key="value" value="3.5"/>
                                     </userDefinedRuntimeAttribute>
                                 </userDefinedRuntimeAttributes>
+                                <connections>
+                                    <action selector="receiveTypeAct:" destination="BYZ-38-t0r" eventType="touchUpInside" id="uQK-B3-vdY"/>
+                                </connections>
                             </button>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" alwaysBounceHorizontal="YES" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="vvQ-ee-rd4">
                                 <rect key="frame" x="25" y="141" width="325" height="100"/>
@@ -333,6 +336,6 @@
     </scenes>
     <resources>
         <image name="IMG_1281" width="30" height="30"/>
-        <image name="timg" width="7.1999998092651367" height="12"/>
+        <image name="timg" width="4.8000001907348633" height="7.9200000762939453"/>
     </resources>
 </document>

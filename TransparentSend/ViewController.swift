@@ -10,26 +10,30 @@ import UIKit
 import AVFoundation
 import CoreBluetooth
 
-enum SendType: String {
+enum SendAndReceiveType: String {
     case Decimal
     case Hexadecimal
-    case String
+    case ASCII
     
     mutating func toggle() {
         switch self {
         case .Decimal:
             self = .Hexadecimal
         case .Hexadecimal:
-            self = .String
-        case .String:
+            self = .ASCII
+        case .ASCII:
             self = .Decimal
         }
     }
 }
 
 class ViewController: UIViewController {
-    
-    var sendType = SendType.Hexadecimal
+    var receiveType = SendAndReceiveType.Hexadecimal
+    @IBAction func receiveTypeAct(_ sender: UIButton) {
+        receiveType.toggle()
+        sender.setTitle(receiveType.rawValue, for: .normal)
+    }
+    var sendType = SendAndReceiveType.Hexadecimal
     @IBAction func sendTypeAct(_ sender: UIButton) {
         sendType.toggle()
         sender.setTitle(sendType.rawValue, for: .normal)
@@ -38,14 +42,7 @@ class ViewController: UIViewController {
     //MARK: - IBOutlet
     @IBOutlet weak var senBtn: UIButton!
     @IBOutlet weak var sendTextView: UITextView!
-    var sendStr = "" {
-        didSet {
-            DispatchQueue.main.async {
-                self.sendTextView.text = self.sendStr
-                self.sendTextView.scrollRangeToVisible(NSRange(location:self.sendTextView.text.lengthOfBytes(using: .utf8), length: 1))
-            }
-        }
-    }
+    
     @IBAction func sendAct(_ sender: UIButton) {
         guard self.characteristic != nil else {
             showErrorAlertWithTitle("Wrong", message: "Please check if you're connect.")
@@ -55,7 +52,7 @@ class ViewController: UIViewController {
         let sendStr = sendTextView.text!
         var uint8s = [UInt8]()
         let numbers = sendStr.split(separator: " ")
-        
+        //最后要将各类的string表示转换成data发送出去
         switch sendType {
         case .Decimal:
             for number in numbers {
@@ -71,7 +68,8 @@ class ViewController: UIViewController {
                 }
             }
             self.peripheral.writeValue(Data(bytes: uint8s), for: self.characteristic, type: .withoutResponse)
-        case .String:
+        case .ASCII:
+            //ASCII发送不需要分开转换的吧？
             self.peripheral.writeValue(sendStr.data(using: .utf8)!, for: self.characteristic, type: .withoutResponse)
         }
     }
@@ -295,10 +293,52 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         } else {
             let valueData = characteristic.value!
             let data = NSData(data: valueData)
+            //由于接收到的数据是四个字节即八个16进制它自动会给出一个空格，所以不是一字节一个空格,要做一些处理
+            let valueStr = data.description.replacingOccurrences(of: "<", with: "").replacingOccurrences(of: ">", with: "").replacingOccurrences(of: " ", with: "")
+//            receiveStr += "Updated\n"
             
-            let valueStr = data.description.replacingOccurrences(of: "<", with: "").replacingOccurrences(of: ">", with: "").replacingOccurrences(of: " ", with: "").uppercased()
-            receiveStr += "Updated\n"
-            receiveStr += "\(valueStr)\n"
+            //一下为了把收到的数据两个两个的分开，即一个字节一个字节分开处理
+            var firstIndex = valueStr.startIndex
+            var secondindex = valueStr.index(firstIndex, offsetBy: 1)
+            var valueStrs = [String]()
+            for _ in 0..<valueStr.count/2-1 {
+                valueStrs.append(String(valueStr[firstIndex...secondindex]))
+                firstIndex = valueStr.index(secondindex, offsetBy: 1)
+                secondindex = valueStr.index(firstIndex, offsetBy: 1)
+            }
+//            print(valueStrs)
+            
+            var values = ""
+            //收到的是16进制的String表示
+            switch receiveType {
+            case .Hexadecimal:
+//                String(str, radix: 16, uppercase: true)
+                values = valueStrs.joined(separator: " ")
+            case .Decimal:
+                var dataInt = [String]()
+                for uint8str in valueStrs {
+                    if let uint8 = UInt8(uint8str, radix: 16) {
+                        dataInt.append("\(uint8)")
+                    }
+                }
+                values = dataInt.joined(separator: " ")
+            case .ASCII:
+                var dataInt = [String]()
+                for uint8str in valueStrs {
+                    if let uint8 = UInt8(uint8str, radix: 16) {
+                        dataInt.append("\(Character(UnicodeScalar(uint8)))")
+                        print("\(Character(UnicodeScalar(uint8)))")
+                    }
+                }
+                values = dataInt.joined(separator: " ")
+                //若接收到的不是127还是128以内的（应该127），这样接收字符串可能要Unicode或者别的什么的编码，可是没有找到合适的函数。。先不写了。
+//                let scanner = Scanner(string: valueStr)
+//                var result:UInt32 = 0
+//                scanner.scanHexInt32(&result)
+//                print(Character(UnicodeScalar(0x1F79C)!))
+//                receiveStr += "\(UnicodeScalar(0x1F79C)!) \(Character(UnicodeScalar(0x1F79C)!))"
+            }
+            receiveStr += "\(values)\n"
         }
     }
     

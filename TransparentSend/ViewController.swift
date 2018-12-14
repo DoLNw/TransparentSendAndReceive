@@ -28,6 +28,19 @@ enum SendAndReceiveType: String {
 }
 
 class ViewController: UIViewController {
+    //留了两个label本来做信号指示的，但是貌似label的background不能动画，先留一下吧。。。。
+    @IBOutlet weak var sendLabel: UILabel!
+    @IBOutlet weak var receiveLabel: UILabel!
+    @IBOutlet weak var receiveCleraBtn: UIButton!
+    @IBAction func sendClearAct(_ sender: UIButton) {
+        self.sendTextView.text = ""
+        self.checkSendData()
+    }
+    @IBAction func receiceClearAct(_ sender: UIButton) {
+        self.receiveTextView.text = ""
+    }
+    
+    
     var receiveType = SendAndReceiveType.Hexadecimal
     @IBAction func receiveTypeAct(_ sender: UIButton) {
         receiveType.toggle()
@@ -37,6 +50,7 @@ class ViewController: UIViewController {
     @IBAction func sendTypeAct(_ sender: UIButton) {
         sendType.toggle()
         sender.setTitle(sendType.rawValue, for: .normal)
+        self.checkSendData()
     }
     
     //MARK: - IBOutlet
@@ -44,34 +58,50 @@ class ViewController: UIViewController {
     @IBOutlet weak var sendTextView: UITextView!
     
     @IBAction func sendAct(_ sender: UIButton) {
+        self.sendTextView.resignFirstResponder()
         guard self.characteristic != nil else {
             showErrorAlertWithTitle("Wrong", message: "Please check if you're connect.")
             return
         }
-        
-        let sendStr = sendTextView.text!
-        var uint8s = [UInt8]()
-        let numbers = sendStr.split(separator: " ")
-        //最后要将各类的string表示转换成data发送出去
-        switch sendType {
-        case .Decimal:
-            for number in numbers {
-                if let uint8 = UInt8(number) {
-                    uint8s.append(uint8)
-                }
-            }
-            self.peripheral.writeValue(Data(bytes: uint8s), for: self.characteristic, type: .withoutResponse)
-        case .Hexadecimal:
-            for number in numbers {
-                if let uint8 = UInt8(number, radix: 16) {
-                    uint8s.append(uint8)
-                }
-            }
-            self.peripheral.writeValue(Data(bytes: uint8s), for: self.characteristic, type: .withoutResponse)
-        case .ASCII:
-            //ASCII发送不需要分开转换的吧？
-            self.peripheral.writeValue(sendStr.data(using: .utf8)!, for: self.characteristic, type: .withoutResponse)
+        //注意：有一种情况是你在发送区没有按完成直接点击发送，这样的话一个didendedit代理自动被执行按钮变红，还有这里的发送按钮actt也被执行，但是我这里数据data是nild不会被发出去的，所以字体改变这一步是不应该执行的。
+        if let data = self.returnSendData() {
+            self.peripheral.writeValue(data, for: self.characteristic, type: .withoutResponse)
+        } else {
+            //刚开始点击发送还是要检查一下？其实不需要的如果刚开始启动的时候view里面没有zstring的时候
+            //那下面再加一句的话如果编辑string后编辑界面还没消失直接点击发送这里检查一遍，代理didendediting也会检查一遍的。
+            self.checkSendData()
+            return
         }
+        
+        //貌似对字体动画无效,而且我也找不到别的字体的动画效果，只能背景颜色先代替一下喽?而且我发现连着写两个animate，两个会有冲突？？虽然有延时。所以改一改第二个写在completion里面而不是b串联着写下去是可以的。emmm，要不还是写成x字体突然变大再变小这样，虽然动画是没有用的。
+        UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 0, options: .curveEaseIn, animations: { [unowned self] in
+            self.sendTextView.backgroundColor = self.receiveBtn.backgroundColor?.withAlphaComponent(0.25)
+            }, completion: { (_) in
+                //下面的delay只要写成0就可以了，因为它在上一个完成后调用。
+                UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 0, options: .curveEaseOut, animations: { [unowned self] in
+                    self.sendTextView.backgroundColor = UIColor.white
+                    }, completion: nil)
+        })
+        
+        //字体以及label动画，貌似都不能动画。醉了。。
+//        UIView.animate(withDuration: 3, animations: { [unowned self] in
+//            self.sendTextView.font = UIFont(name: "Hiragino Maru Gothic ProN", size: 21)
+//            self.sendLabel.backgroundColor = self.receiveBtn.backgroundColor
+//        }) { [unowned self] (_)  in
+//            UIView.animate(withDuration: 3, animations: { [unowned self] in
+//                self.sendTextView.font = UIFont(name: "Hiragino Maru Gothic ProN", size: 18)
+//                self.sendLabel.backgroundColor = UIColor.white
+//            })
+//        }
+//        UIView.animate(withDuration: 3, animations: {
+////            self.sendTextView.font = UIFont(name: "Hiragino Maru Gothic ProN", size: 21)
+//            self.sendLabel.backgroundColor = self.receiveBtn.backgroundColor
+//        }, completion: { (_) in
+//            UIView.animate(withDuration: 3, animations: { [unowned self] in
+////                self.sendTextView.font = UIFont(name: "Hiragino Maru Gothic ProN", size: 18)
+//                self.sendLabel.backgroundColor = UIColor.white
+//            })
+//        })
     }
     
     @IBOutlet weak var receiveBtn: UIButton!
@@ -121,6 +151,11 @@ class ViewController: UIViewController {
         tapGesture.delegate = self
         self.view.addGestureRecognizer(tapGesture)
         
+//        self.receiveTextView.delegate = self
+        self.sendTextView.delegate = self
+        
+        self.sendTextView.layer.cornerRadius = 3.5
+        self.sendTextView.clipsToBounds = true
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -221,7 +256,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         print("didConnect: ")
-        //注意self.title这个也需要在住线程
+        //注意self.title这个也需要在主线程
         DispatchQueue.main.sync { [unowned self] in
             self.title = peripheral.name
             self.activityView.stopAnimating()
@@ -338,6 +373,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 //                print(Character(UnicodeScalar(0x1F79C)!))
 //                receiveStr += "\(UnicodeScalar(0x1F79C)!) \(Character(UnicodeScalar(0x1F79C)!))"
             }
+            
             receiveStr += "\(values)\n"
         }
     }
@@ -350,11 +386,21 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 
 
 //MARK: - TextField and Gesture Delegate
-extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate {
+extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITextViewDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         return false
     }
-    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        self.checkSendData()
+    }
+    //下面是实时监测输入的数字来实现return按键，因为它不像UITextField有shouldreturn代理。
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+        if text == "\n" {
+            textView.resignFirstResponder()
+            return false
+        }
+        return true
+    }
     @objc func tapAction(_ gestureRecognizer: UITapGestureRecognizer) {
         
 //        self.textField.resignFirstResponder()
@@ -368,6 +414,92 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate {
 
 //MARK: - Extral Methods
 extension ViewController {
+    func checkSendData() {
+        let sendStr = sendTextView.text!
+        let numbers = sendStr.split(separator: " ")
+        //最后要将各类的string表示转换成data发送出去
+        switch sendType {
+        case .Decimal:
+            for number in numbers {
+                if let _ = UInt8(number) {
+                    continue
+                } else {
+                    self.sendTextView.layer.borderColor = self.receiveCleraBtn.backgroundColor?.cgColor
+                    self.sendTextView.layer.borderWidth = 1.5
+                    self.sendTextView.layer.cornerRadius = 3.5
+                    self.sendTextView.clipsToBounds = true
+                    self.senBtn.isEnabled = false
+                    self.senBtn.backgroundColor = self.receiveCleraBtn.backgroundColor
+                    return
+                }
+            }
+        case .Hexadecimal:
+            for number in numbers {
+                if let _ = UInt8(number, radix: 16) {
+                    continue
+                } else {
+                    self.sendTextView.layer.borderColor = self.receiveCleraBtn.backgroundColor?.cgColor
+                    self.sendTextView.layer.borderWidth = 1.5
+                    self.sendTextView.layer.cornerRadius = 3.5
+                    self.sendTextView.clipsToBounds = true
+                    self.senBtn.isEnabled = false
+                    self.senBtn.backgroundColor = self.receiveCleraBtn.backgroundColor
+                    return
+                }
+            }
+        case .ASCII:
+            //ASCII发送不需要分开转换的吧？
+            if let _ = sendStr.data(using: .utf8){
+            } else {
+                self.sendTextView.layer.borderColor = self.receiveCleraBtn.backgroundColor?.cgColor
+                self.sendTextView.layer.borderWidth = 1.5
+                self.sendTextView.layer.cornerRadius = 3.5
+                self.sendTextView.clipsToBounds = true
+                self.senBtn.isEnabled = false
+                self.senBtn.backgroundColor = self.receiveCleraBtn.backgroundColor
+                return
+            }
+        }
+        self.sendTextView.layer.borderColor = UIColor.white.withAlphaComponent(0).cgColor
+        //a下面这句话是错的，UIColor created with component values far outside the expected range.
+//        self.sendTextView.layer.borderColor = UIColor(white: 3, alpha: 0).cgColor
+        self.sendTextView.layer.borderWidth = 0
+        self.senBtn.isEnabled = true
+        //颜色我现在好难实现。。。随意直接根据现有的赋值吧。。而且下面那个本身不specify alpha也可以的，因为一样的，我只想让你知道它怎么用的。
+        self.senBtn.backgroundColor = self.receiveBtn.backgroundColor?.withAlphaComponent(0.53)
+    }
+    
+    //我前面要做的是如果发送的数据不合适，显示红框且不能发送，所以此处不用可选其实也可以。
+    func returnSendData() -> Data? {
+        let sendStr = sendTextView.text!
+        var uint8s = [UInt8]()
+        let numbers = sendStr.split(separator: " ")
+        //最后要将各类的string表示转换成data发送出去
+        switch sendType {
+        case .Decimal:
+            for number in numbers {
+                if let uint8 = UInt8(number) {
+                    uint8s.append(uint8)
+                } else {
+                    return nil
+                }
+            }
+            return Data(bytes: uint8s)
+        case .Hexadecimal:
+            for number in numbers {
+                if let uint8 = UInt8(number, radix: 16) {
+                    uint8s.append(uint8)
+                } else {
+                    return nil
+                }
+            }
+            return Data(bytes: uint8s)
+        case .ASCII:
+            //ASCII发送不需要分开转换的吧？
+            return sendStr.data(using: .utf8)
+        }
+    }
+    
     func allBtnisHidden(_ ye: Bool) {
     }
     

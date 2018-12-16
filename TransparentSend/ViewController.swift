@@ -28,6 +28,8 @@ enum SendAndReceiveType: String {
 }
 
 class ViewController: UIViewController {
+    let blueToothCentral = BlueToothCentral()
+    
     //留了两个label本来做信号指示的，但是貌似label的background不能动画，先留一下吧。。。。
     @IBOutlet weak var sendLabel: UILabel!
     @IBOutlet weak var receiveLabel: UILabel!
@@ -59,13 +61,13 @@ class ViewController: UIViewController {
     
     @IBAction func sendAct(_ sender: UIButton) {
         self.sendTextView.resignFirstResponder()
-        guard self.characteristic != nil else {
+        guard BlueToothCentral.characteristic != nil else {
             showErrorAlertWithTitle("Wrong", message: "Please check if you're connect.")
             return
         }
         //注意：有一种情况是你在发送区没有按完成直接点击发送，这样的话一个didendedit代理自动被执行按钮变红，还有这里的发送按钮actt也被执行，但是我这里数据data是nild不会被发出去的，所以字体改变这一步是不应该执行的。
         if let data = self.returnSendData() {
-            self.peripheral.writeValue(data, for: self.characteristic, type: .withoutResponse)
+            BlueToothCentral.peripheral.writeValue(data, for: BlueToothCentral.characteristic, type: .withoutResponse)
         } else {
             //刚开始点击发送还是要检查一下？其实不需要的如果刚开始启动的时候view里面没有zstring的时候
             //那下面再加一句的话如果编辑string后编辑界面还没消失直接点击发送这里检查一遍，代理didendediting也会检查一遍的。
@@ -116,35 +118,24 @@ class ViewController: UIViewController {
     }
     @IBAction func receiveAct(_ sender: UIButton) {
         //这个样接收代理就会触发
-        guard self.characteristic != nil else {
+        guard BlueToothCentral.characteristic != nil else {
             showErrorAlertWithTitle("Wrong", message: "Please check if you're connect.")
             return
         }
-        self.peripheral.readValue(for: self.characteristic)
+        BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
     }
     
     
-    
-    //MARK: - Property
-    static var peripherals = [String]()
-    static var peripheralIDs = [CBPeripheral]()
-    //由于扩展中不能写存储属性，所以只能写在这里了
-    static var isBlueOn = false
-    static var isFirstPer = false
-    static var centralManager: CBCentralManager!
-    private var peripheral: CBPeripheral!
-    private var characteristic: CBCharacteristic!
     var disConnectBtn: UIButton!
     var ConnectBtn: UIButton!
     var activityView: UIActivityIndicatorView!
-    
     
     //MARK: - Override Methods
     override func viewDidLoad() {
         super.viewDidLoad()
         self.title = "UnConnected"
         
-        ViewController.centralManager = CBCentralManager(delegate: self, queue: DispatchQueue.global())
+        BlueToothCentral.centralManager = CBCentralManager(delegate: self, queue: DispatchQueue.global())
         self.blueDisplay()
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(tapAction(_:)))
@@ -156,12 +147,13 @@ class ViewController: UIViewController {
         
         self.sendTextView.layer.cornerRadius = 3.5
         self.sendTextView.clipsToBounds = true
+        
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         self.activityView.stopAnimating()
         
-        if self.characteristic == nil {
+        if BlueToothCentral.characteristic == nil {
             self.ConnectBtn.isHidden = false
         }
     }
@@ -171,7 +163,7 @@ class ViewController: UIViewController {
 extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func startBlueTooth() {
-        guard ViewController.isBlueOn else { return }
+        guard BlueToothCentral.isBlueOn else { return }
 //        centralManager.scanForPeripherals(withServices: nil, options: nil)
         //过了一会儿没连上怎么办？
 //        DispatchQueue.main.asyncAfter(deadline: .now()+5) { [unowned self] in
@@ -198,20 +190,21 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         if sender.currentTitle == "ScanPer" {
             startBlueTooth()
         } else if sender.currentTitle == "Discont" {
-            guard self.peripheral != nil else { return }
-            ViewController.centralManager.cancelPeripheralConnection(self.peripheral)
+            guard BlueToothCentral.peripheral != nil else { return }
+            BlueToothCentral.centralManager.cancelPeripheralConnection(BlueToothCentral.peripheral)
         }
     }
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
-            ViewController.isBlueOn = true
+            BlueToothCentral.isBlueOn = true
             DispatchQueue.main.sync {
                 ConnectBtn.isHidden = false
                 self.title = "UnConnected"
             }
+//            BlueToothCentral.centralManager.scanForPeripherals(withServices: nil, options: nil)
         default:
-            ViewController.isBlueOn = false
+            BlueToothCentral.isBlueOn = false
             DispatchQueue.main.sync {
                 if (self.navigationController?.viewControllers.count)! > 1 {
                     self.navigationController?.popViewController(animated: true)
@@ -226,26 +219,25 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                 self.disConnectBtn.isHidden = true
                 self.ConnectBtn.isHidden = true
             }
-            if self.peripheral != nil {
-                centralManager(ViewController.centralManager, didDisconnectPeripheral: self.peripheral, error: nil)
+            if BlueToothCentral.peripheral != nil {
+                centralManager(BlueToothCentral.centralManager, didDisconnectPeripheral: BlueToothCentral.peripheral, error: nil)
             }
         }
     }
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         guard peripheral.name != nil else { return }
-        
-        if ViewController.isFirstPer {
-            ViewController.isFirstPer = false
-            ViewController.peripherals = []
-            ViewController.peripheralIDs = []
-            ViewController.peripherals.append(peripheral.name ?? "Unknown")
-            ViewController.peripheralIDs.append(peripheral)
+        if BlueToothCentral.isFirstPer {
+            BlueToothCentral.isFirstPer = false
+            BlueToothCentral.peripherals = []
+            BlueToothCentral.peripheralIDs = []
+            BlueToothCentral.peripherals.append(peripheral.name ?? "Unknown")
+            BlueToothCentral.peripheralIDs.append(peripheral)
         } else {
-            for per in ViewController.peripheralIDs {
+            for per in BlueToothCentral.peripheralIDs {
                 if per == peripheral { return }
             }
-            ViewController.peripherals.append(peripheral.name ?? "Unknown")
-            ViewController.peripheralIDs.append(peripheral)
+            BlueToothCentral.peripherals.append(peripheral.name ?? "Unknown")
+            BlueToothCentral.peripheralIDs.append(peripheral)
         }
 //        guard peripheral.identifier == UUID(uuidString: "32631FF3-E023-3448-0F0C-2A7437257A72") else {
 //            return
@@ -263,25 +255,26 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             self.activityView.isHidden = true
             self.disConnectBtn.isHidden = false
             self.allBtnisHidden(false)
-            
+            //注意在手势触发蓝牙扫描转场的时候，因为在Transition这一个类里面，所以无法对我们的按钮进行操控（也就是不能像startBlueTooth方法一样对connectbtn隐藏，且使activityView动画），所以为了稍微正常一点，我把connectbtn的隐藏在这下面也写一下，activityView就没有动画了，反正也被遮住了看不到🤦‍♂️。
+            self.ConnectBtn.isHidden = true
             self.navigationController?.popViewController(animated: true)
         }
         
-        self.peripheral = peripheral
-        ViewController.centralManager.stopScan()
-        self.peripheral.delegate = self
-        self.peripheral.discoverServices(nil)
+        BlueToothCentral.peripheral = peripheral
+        BlueToothCentral.centralManager.stopScan()
+        BlueToothCentral.peripheral.delegate = self
+        BlueToothCentral.peripheral.discoverServices(nil)
     }
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         print("didFailToConnect: ")
     }
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         print("didDisconnectPeripheral: ")
-        self.peripheral = nil
-        self.characteristic = nil
+        BlueToothCentral.peripheral = nil
+        BlueToothCentral.characteristic = nil
         DispatchQueue.main.async { [unowned self] in
             self.allBtnisHidden(true)
-            if ViewController.isBlueOn {
+            if BlueToothCentral.isBlueOn {
                 self.disConnectBtn.isHidden = true
                 self.activityView.isHidden = true
                 self.activityView.stopAnimating()
@@ -298,24 +291,24 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        guard self.peripheral == peripheral else { return }
+        guard BlueToothCentral.peripheral == peripheral else { return }
         
         print((peripheral.services?.first)!)
         peripheral.discoverCharacteristics(nil, for: (peripheral.services?.first)!)
     }
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        guard self.peripheral == peripheral else { return }
+        guard BlueToothCentral.peripheral == peripheral else { return }
         //此处last还是first有讲究吗？我记得之前一直设置订阅订阅不上去的，怎么解决的？
-        self.characteristic = service.characteristics?.first
-        print(self.characteristic!)
+        BlueToothCentral.characteristic = service.characteristics?.first
+        print(BlueToothCentral.characteristic!)
         
-        if (self.characteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
-            peripheral.setNotifyValue(true, for: self.characteristic)
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
+            BlueToothCentral.peripheral.setNotifyValue(true, for: BlueToothCentral.characteristic)
         } else {
             print("cannot notify")
         }
-        if (self.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
-            peripheral.readValue(for: self.characteristic)
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
+            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
         } else {
             print("cannot read")
         }
@@ -348,7 +341,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             switch receiveType {
             case .Hexadecimal:
 //                String(str, radix: 16, uppercase: true)
-                values = valueStrs.joined(separator: " ")
+                values = valueStrs.joined(separator: " ").uppercased()
             case .Decimal:
                 var dataInt = [String]()
                 for uint8str in valueStrs {
@@ -362,7 +355,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                 for uint8str in valueStrs {
                     if let uint8 = UInt8(uint8str, radix: 16) {
                         dataInt.append("\(Character(UnicodeScalar(uint8)))")
-                        print("\(Character(UnicodeScalar(uint8)))")
+//                        print("\(Character(UnicodeScalar(uint8)))")
                     }
                 }
                 values = dataInt.joined(separator: " ")
@@ -434,6 +427,7 @@ extension ViewController {
                 }
             }
         case .Hexadecimal:
+            self.sendTextView.text = sendStr.uppercased()
             for number in numbers {
                 if let _ = UInt8(number, radix: 16) {
                     continue

@@ -32,10 +32,10 @@ class ScanTableViewController: UITableViewController {
         //注意在手势转场没有成功的时候他会返回回来，这时候又出发一个willappear导致出错（又会创建一个timer，且界面消失是不会释放的要手动释放），所以加条件限制
         guard self.timer == nil else { return }
         isFirst = true
-        if ViewController.isBlueOn {
-            ViewController.centralManager.scanForPeripherals(withServices: nil, options: nil)
+        if BlueToothCentral.isBlueOn {
+            BlueToothCentral.centralManager.scanForPeripherals(withServices: nil, options: nil)
         }
-        ViewController.isFirstPer = true
+        BlueToothCentral.isFirstPer = true
 //        DispatchQueue.main.asyncAfter(deadline: .now()+0.35) { [unowned self] in
 //            //注意如果我手势出来此界面但是cancel掉了，那么过0.75秒此界面是不存在的，会有Attempted to read an unowned reference but the object was already deallocated导致出错,所以我要放在wiewdidappear里面
 //            guard self.isViewLoaded else { return }
@@ -73,8 +73,8 @@ class ScanTableViewController: UITableViewController {
             return
         }
         isFirst = false
-        self.temp = ViewController.peripheralIDs
-        self.tempStr = ViewController.peripherals
+        self.temp = BlueToothCentral.peripheralIDs
+        self.tempStr = BlueToothCentral.peripherals
         // 因为第一次load，所以本身没有任何东西，下面第一个for可以去掉
 //        for per in self.peripheralIDes {
 //            if !self.temp.contains(per) {
@@ -97,9 +97,9 @@ class ScanTableViewController: UITableViewController {
     }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        ViewController.centralManager.stopScan()
-        ViewController.peripherals = []
-        ViewController.peripheralIDs = []
+        BlueToothCentral.centralManager.stopScan()
+        BlueToothCentral.peripherals = []
+        BlueToothCentral.peripheralIDs = []
         self.peripherales = []
         self.peripheralIDes = []
         self.temp = []
@@ -110,8 +110,8 @@ class ScanTableViewController: UITableViewController {
 //        self.view.frame = CGRect(x: 0, y: 367, width: 375, height: 400)
 //        print("2")
 //        print(self.view.frame)
-        self.temp = ViewController.peripheralIDs
-        self.tempStr = ViewController.peripherals
+        self.temp = BlueToothCentral.peripheralIDs
+        self.tempStr = BlueToothCentral.peripherals
         for per in self.peripheralIDes {
             if !self.temp.contains(per) {
                 let index = self.peripheralIDes.index(of: per)!
@@ -132,9 +132,9 @@ class ScanTableViewController: UITableViewController {
 //        print(ViewController.peripherals.count)
 //        self.tableView.reloadData()
         DispatchQueue.main.asyncAfter(deadline: .now()+0.1) {
-            ViewController.isFirstPer = true
-            if ViewController.isBlueOn {
-                ViewController.centralManager.scanForPeripherals(withServices: nil, options: nil)
+            BlueToothCentral.isFirstPer = true
+            if BlueToothCentral.isBlueOn {
+                BlueToothCentral.centralManager.scanForPeripherals(withServices: nil, options: nil)
             }
         }
     }
@@ -171,7 +171,7 @@ class ScanTableViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         guard self.peripherales[indexPath.row] != "Unknown" else { return }
-        ViewController.centralManager.connect(self.peripheralIDes[indexPath.row], options: nil)
+        BlueToothCentral.centralManager.connect(self.peripheralIDes[indexPath.row], options: nil)
     }
     deinit {
         NotificationCenter.default.removeObserver(self)

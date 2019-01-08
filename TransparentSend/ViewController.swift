@@ -39,7 +39,7 @@ class ViewController: UIViewController {
         self.checkSendData()
     }
     @IBAction func receiceClearAct(_ sender: UIButton) {
-        self.receiveTextView.text = ""
+        self.receiveStr = ""
     }
     
     
@@ -328,12 +328,21 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             //一下为了把收到的数据两个两个的分开，即一个字节一个字节分开处理
             var firstIndex = valueStr.startIndex
             var secondindex = valueStr.index(firstIndex, offsetBy: 1)
+            //啊啊啊啊啊，以前我这里从valueStr到valueStrs一直是少一个16进制的
             var valueStrs = [String]()
+            //            for _ in 0..<valueStr.count/2-1 {
+            //                valueStrs.append(String(valueStr[firstIndex...secondindex]))
+            //                firstIndex = valueStr.index(secondindex, offsetBy: 1)
+            //                secondindex = valueStr.index(firstIndex, offsetBy: 1)
+            //            }
             for _ in 0..<valueStr.count/2-1 {
                 valueStrs.append(String(valueStr[firstIndex...secondindex]))
                 firstIndex = valueStr.index(secondindex, offsetBy: 1)
                 secondindex = valueStr.index(firstIndex, offsetBy: 1)
             }
+            //所以这里最后要加一句这个呀，本来没加
+            valueStrs.append(String(valueStr[firstIndex...secondindex]))
+            
 //            print(valueStrs)
             
             var values = ""

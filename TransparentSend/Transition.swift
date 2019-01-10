@@ -88,8 +88,11 @@ class Transition: NSObject, UINavigationControllerDelegate, UIViewControllerTran
                 self.navigationController?.popViewController(animated: true)
             } else {
 //                self.navigationController.topViewController?.performSegue(withIdentifier: "pushid", sender: nil)
-                let scanTableController = self.navigationController.storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
-                self.navigationController?.pushViewController(scanTableController, animated: true)
+                //确保在没有连接的情况下可以打开连接界面进行连接，如果已有连接了，这个界面就不出来了。这样就确保一次连接一个了。
+                if BlueToothCentral.peripheral == nil {
+                    let scanTableController = self.navigationController.storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
+                    self.navigationController?.pushViewController(scanTableController, animated: true)
+                }
             }
             
         case .changed:

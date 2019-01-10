@@ -30,6 +30,32 @@ enum SendAndReceiveType: String {
 class ViewController: UIViewController {
     let blueToothCentral = BlueToothCentral()
     
+    var writeType: CBCharacteristicWriteType?
+    @IBOutlet weak var propertyTextView: UILabel!
+    var propertyStr = "" {
+        didSet {
+            DispatchQueue.main.async { [unowned self] in
+                self.propertyTextView.text = self.propertyStr
+            }
+        }
+    }
+    
+    //目前服务还没有给出选择，特征还是要给出一个隐藏的数字的，为了方便。
+    @IBOutlet weak var charNumSelectTextLabel: UITextField!
+    @IBOutlet weak var serviceNumSelectLabel: UITextField!
+    @IBAction func changeCharAndSerAct(_ sender: UIButton) {
+        guard BlueToothCentral.peripheral != nil else { return }
+        
+        //由于之前的还在，要取消之前的通知
+        if BlueToothCentral.characteristic.isNotifying {
+            BlueToothCentral.peripheral.setNotifyValue(false, for: BlueToothCentral.characteristic)
+        }
+        BlueToothCentral.peripheral.discoverServices(nil)
+        self.charNumSelectTextLabel.resignFirstResponder()
+        self.serviceNumSelectLabel.resignFirstResponder()
+    }
+    
+    
     //留了两个label本来做信号指示的，但是貌似label的background不能动画，先留一下吧。。。。
     @IBOutlet weak var sendLabel: UILabel!
     @IBOutlet weak var receiveLabel: UILabel!
@@ -65,9 +91,12 @@ class ViewController: UIViewController {
             showErrorAlertWithTitle("Wrong", message: "Please check if you're connect.")
             return
         }
+        
         //注意：有一种情况是你在发送区没有按完成直接点击发送，这样的话一个didendedit代理自动被执行按钮变红，还有这里的发送按钮actt也被执行，但是我这里数据data是nild不会被发出去的，所以字体改变这一步是不应该执行的。
         if let data = self.returnSendData() {
-            BlueToothCentral.peripheral.writeValue(data, for: BlueToothCentral.characteristic, type: .withoutResponse)
+            if let writeType = self.writeType {
+                BlueToothCentral.peripheral.writeValue(data, for: BlueToothCentral.characteristic, type: writeType)
+            }
         } else {
             //刚开始点击发送还是要检查一下？其实不需要的如果刚开始启动的时候view里面没有zstring的时候
             //那下面再加一句的话如果编辑string后编辑界面还没消失直接点击发送这里检查一遍，代理didendediting也会检查一遍的。
@@ -77,7 +106,7 @@ class ViewController: UIViewController {
         
         //貌似对字体动画无效,而且我也找不到别的字体的动画效果，只能背景颜色先代替一下喽?而且我发现连着写两个animate，两个会有冲突？？虽然有延时。所以改一改第二个写在completion里面而不是b串联着写下去是可以的。emmm，要不还是写成x字体突然变大再变小这样，虽然动画是没有用的。
         UIView.animate(withDuration: 0.25, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 0, options: .curveEaseIn, animations: { [unowned self] in
-            self.sendTextView.backgroundColor = self.receiveBtn.backgroundColor?.withAlphaComponent(0.25)
+            self.sendTextView.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.25)
             }, completion: { (_) in
                 //下面的delay只要写成0就可以了，因为它在上一个完成后调用。
                 UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 0, options: .curveEaseOut, animations: { [unowned self] in
@@ -122,7 +151,13 @@ class ViewController: UIViewController {
             showErrorAlertWithTitle("Wrong", message: "Please check if you're connect.")
             return
         }
-        BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
+        //这里可以加一个判断，看看这个蓝牙的服务的特征是否是可读的，然后再读取呀！
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
+            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
+        } else {
+            print("cannot read")
+            receiveStr += "cannot read\n"
+        }
     }
     
     
@@ -153,7 +188,11 @@ class ViewController: UIViewController {
         super.viewDidAppear(animated)
         self.activityView.stopAnimating()
         
-        if BlueToothCentral.characteristic == nil {
+        //就是如果加了这句的话，如果本来连接上了之后还没有拿到character的时候就到这一步了，那么就有问题了呀！但是转场取消直接没按扭了，所以使用再下面一句
+//        if BlueToothCentral.characteristic == nil {
+//            self.ConnectBtn.isHidden = false
+//        }
+        if BlueToothCentral.peripheral == nil {
             self.ConnectBtn.isHidden = false
         }
     }
@@ -247,23 +286,29 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        //如果连接之前已经有一个连接着了，那么需要把它先disconnect？不然虽然可能可以两个连着，但也只有一个的引用呀现在。
+        if BlueToothCentral.peripheral != nil {
+            
+        }
+        
+        
         print("didConnect: ")
+        BlueToothCentral.peripheral = peripheral
+        BlueToothCentral.centralManager.stopScan()
+        BlueToothCentral.peripheral.delegate = self
+        BlueToothCentral.peripheral.discoverServices(nil)
+        
         //注意self.title这个也需要在主线程
         DispatchQueue.main.sync { [unowned self] in
             self.title = peripheral.name
             self.activityView.stopAnimating()
             self.activityView.isHidden = true
             self.disConnectBtn.isHidden = false
+            self.ConnectBtn.isHidden = true
             self.allBtnisHidden(false)
             //注意在手势触发蓝牙扫描转场的时候，因为在Transition这一个类里面，所以无法对我们的按钮进行操控（也就是不能像startBlueTooth方法一样对connectbtn隐藏，且使activityView动画），所以为了稍微正常一点，我把connectbtn的隐藏在这下面也写一下，activityView就没有动画了，反正也被遮住了看不到🤦‍♂️。
-            self.ConnectBtn.isHidden = true
             self.navigationController?.popViewController(animated: true)
         }
-        
-        BlueToothCentral.peripheral = peripheral
-        BlueToothCentral.centralManager.stopScan()
-        BlueToothCentral.peripheral.delegate = self
-        BlueToothCentral.peripheral.discoverServices(nil)
     }
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         print("didFailToConnect: ")
@@ -273,6 +318,12 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         BlueToothCentral.peripheral = nil
         BlueToothCentral.characteristic = nil
         DispatchQueue.main.async { [unowned self] in
+            self.senBtn.isEnabled = false
+            self.receiveBtn.isEnabled = false
+            self.senBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
+            self.receiveBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
+            self.propertyStr = ""
+            
             self.allBtnisHidden(true)
             if BlueToothCentral.isBlueOn {
                 self.disConnectBtn.isHidden = true
@@ -292,27 +343,83 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard BlueToothCentral.peripheral == peripheral else { return }
-        
-        print((peripheral.services?.first)!)
-        peripheral.discoverCharacteristics(nil, for: (peripheral.services?.first)!)
+        DispatchQueue.main.sync { [unowned self] in
+            if let text = self.serviceNumSelectLabel.text, let num = Int(text), ((peripheral.services?.count)!>=num) {
+                peripheral.discoverCharacteristics(nil, for: ((peripheral.services?[num-1])!))
+                print((peripheral.services?[num-1])!)
+            } else {
+                peripheral.discoverCharacteristics(nil, for: (peripheral.services?.first)!)
+                print((peripheral.services?.first)!)
+                if self.serviceNumSelectLabel.text != "" {
+                    self.serviceNumSelectLabel.text = "1"
+                }
+            }
+        }
     }
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         guard BlueToothCentral.peripheral == peripheral else { return }
-        //此处last还是first有讲究吗？我记得之前一直设置订阅订阅不上去的，怎么解决的？
-        BlueToothCentral.characteristic = service.characteristics?.first
+        //此处last还是first有讲究吗？我记得之前一直设置订阅订阅不上去的，怎么解决的?这里要sync而不是async
+        DispatchQueue.main.sync { [unowned self] in
+            if let text = self.charNumSelectTextLabel.text, let num = Int(text), ((service.characteristics?.count)!>=num) {
+                BlueToothCentral.characteristic = service.characteristics?[num-1]
+            } else {
+                BlueToothCentral.characteristic = service.characteristics?.first
+                if self.charNumSelectTextLabel.text != "" {
+                    self.charNumSelectTextLabel.text = "1"
+                }
+            }
+        }
+        
+//        BlueToothCentral.characteristic = service.characteristics?.last
         print(BlueToothCentral.characteristic!)
+        propertyStr = ""
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
+            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
+            self.propertyStr += "Read\n"
+            DispatchQueue.main.async {
+                self.receiveBtn.isEnabled = true
+                self.receiveBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
+            }
+        } else {
+            print("cannot read")
+            DispatchQueue.main.async {
+                self.receiveBtn.isEnabled = false
+                self.receiveBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
+            }
+        }
+        
         
         if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
             BlueToothCentral.peripheral.setNotifyValue(true, for: BlueToothCentral.characteristic)
+            self.propertyStr += "Notify\n"
         } else {
             print("cannot notify")
         }
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
-            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
-        } else {
-            print("cannot read")
-        }
         
+        
+        self.writeType = nil
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.write.rawValue) != 0 {
+            self.writeType = CBCharacteristicWriteType.withResponse
+            propertyStr += "WriteWithResponse\n"
+        } else {
+            print("cannot writeWithResponse")
+        }
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.writeWithoutResponse.rawValue) != 0 {
+            self.writeType = CBCharacteristicWriteType.withoutResponse
+            propertyStr += "WriteWithoutResponse\n"
+        } else {
+            print("cannot writeWithoutResponse")
+        }
+        DispatchQueue.main.async {
+            //如果不能发送，那么把发送按钮变灰
+            if self.writeType == nil {
+                self.senBtn.isEnabled = false
+                self.senBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
+            } else {
+                self.senBtn.isEnabled = true
+                self.senBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
+            }
+        }
     }
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         print("Updated")
@@ -324,7 +431,8 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             //由于接收到的数据是四个字节即八个16进制它自动会给出一个空格，所以不是一字节一个空格,要做一些处理
             let valueStr = data.description.replacingOccurrences(of: "<", with: "").replacingOccurrences(of: ">", with: "").replacingOccurrences(of: " ", with: "")
 //            receiveStr += "Updated\n"
-            
+//            print(valueStr)
+            guard valueStr.count > 0 else { return }
             //一下为了把收到的数据两个两个的分开，即一个字节一个字节分开处理
             var firstIndex = valueStr.startIndex
             var secondindex = valueStr.index(firstIndex, offsetBy: 1)
@@ -384,6 +492,10 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         print("Notidied")
     }
     
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+        print("write to peripheral withresponse")
+    }
+    
 }
 
 
@@ -410,6 +522,8 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
 //        self.textField.becomeFirstResponder()
         self.sendTextView.resignFirstResponder()
         self.receiveTextView.resignFirstResponder()
+        self.charNumSelectTextLabel.resignFirstResponder()
+        self.serviceNumSelectLabel.resignFirstResponder()
     }
 }
 
@@ -417,6 +531,8 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
 //MARK: - Extral Methods
 extension ViewController {
     func checkSendData() {
+        guard self.writeType != nil else { return }
+        
         let sendStr = sendTextView.text!
         let numbers = sendStr.split(separator: " ")
         //最后要将各类的string表示转换成data发送出去
@@ -469,7 +585,7 @@ extension ViewController {
         self.sendTextView.layer.borderWidth = 0
         self.senBtn.isEnabled = true
         //颜色我现在好难实现。。。随意直接根据现有的赋值吧。。而且下面那个本身不specify alpha也可以的，因为一样的，我只想让你知道它怎么用的。
-        self.senBtn.backgroundColor = self.receiveBtn.backgroundColor?.withAlphaComponent(0.53)
+        self.senBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
     }
     
     //我前面要做的是如果发送的数据不合适，显示红框且不能发送，所以此处不用可选其实也可以。

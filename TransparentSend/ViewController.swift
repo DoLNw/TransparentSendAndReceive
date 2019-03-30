@@ -614,7 +614,12 @@ extension ViewController {
             }
             return Data(bytes: uint8s)
         case .ASCII:
-            //ASCII发送不需要分开转换的吧？
+            //转义字符: 由于单个转换，无法..
+            if sendStr.hasSuffix("\n") || sendStr.hasSuffix("\r") {
+                
+            }
+            
+            //ASCII发送不需要分开转换的吧?    zhuanyi
             return sendStr.data(using: .utf8)
         }
     }

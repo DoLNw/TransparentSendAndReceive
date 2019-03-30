@@ -87,7 +87,7 @@ class ScanTableViewController: UITableViewController {
 //        }
         for per in self.temp {
             if !self.peripheralIDes.contains(per) {
-                let index = self.temp.index(of: per)!
+                let index = self.temp.firstIndex(of: per)!
                 self.peripheralIDes.insert(per, at: 0)
                 self.peripherales.insert(self.tempStr[index], at: 0)
                 tableView.insertRows(at: [IndexPath(item: 0, section: 0)], with: .automatic)
@@ -114,7 +114,7 @@ class ScanTableViewController: UITableViewController {
         self.tempStr = BlueToothCentral.peripherals
         for per in self.peripheralIDes {
             if !self.temp.contains(per) {
-                let index = self.peripheralIDes.index(of: per)!
+                let index = self.peripheralIDes.firstIndex(of: per)!
 //                tableView.setEditing(, animated: )
                 self.peripheralIDes.remove(at: index)
                 self.peripherales.remove(at: index)
@@ -123,7 +123,7 @@ class ScanTableViewController: UITableViewController {
         }
         for per in self.temp {
             if !self.peripheralIDes.contains(per) {
-                let index = self.temp.index(of: per)!
+                let index = self.temp.firstIndex(of: per)!
                 self.peripheralIDes.insert(per, at: 0)
                 self.peripherales.insert(self.tempStr[index], at: 0)
                 tableView.insertRows(at: [IndexPath(item: 0, section: 0)], with: .automatic)

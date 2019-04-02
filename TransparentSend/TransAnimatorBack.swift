@@ -47,7 +47,7 @@ class TransitionAnimatorBack: NSObject, UIViewControllerAnimatedTransitioning {
                 tempView.removeFromSuperview()
                 self.transitionContext?.completeTransition(true)
             } else {
-                print("cancel")
+//                print("cancel")
                 toVC.view.isHidden = true
 //                toVC.view.alpha = 1
 //                fromVC.view.frame  = CGRect(x: 0, y: 667, width: 375, height: 400)
@@ -58,7 +58,7 @@ class TransitionAnimatorBack: NSObject, UIViewControllerAnimatedTransitioning {
     }
     func animationEnded(_ transitionCompleted: Bool) {
 //        print(self.view.view.frame)
-        print("Transition ended.")
+//        print("Transition ended.")
     }
     
 }

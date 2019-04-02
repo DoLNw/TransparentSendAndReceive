@@ -71,7 +71,7 @@ class IntentHandler: INExtension, INSendMessageIntentHandling, INSearchForMessag
         if let text = intent.content, !text.isEmpty {
             self.centralManager = CBCentralManager(delegate: self, queue: nil)
             //注意给peripheral也要设置代理不要忘记。
-            print(self.centralManager)
+//            print(self.centralManager)
             print(self.centralManager.state)
             completion(INStringResolutionResult.success(with: text))
         } else {

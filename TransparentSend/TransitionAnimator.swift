@@ -54,7 +54,7 @@ class TransitionAnimator: NSObject, UIViewControllerAnimatedTransitioning {
         }
     }
     func animationEnded(_ transitionCompleted: Bool) {
-        print("Transition ended.")
+//        print("Transition ended.")
     }
     
 }

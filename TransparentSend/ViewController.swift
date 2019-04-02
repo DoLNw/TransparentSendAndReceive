@@ -28,6 +28,8 @@ enum SendAndReceiveType: String {
 }
 
 class ViewController: UIViewController {
+    @IBOutlet weak var visualEffectView: UIVisualEffectView!
+    
     let blueToothCentral = BlueToothCentral()
     
     var writeType: CBCharacteristicWriteType?
@@ -161,9 +163,11 @@ class ViewController: UIViewController {
     }
     
     
-    var disConnectBtn: UIButton!
-    var ConnectBtn: UIButton!
-    var activityView: UIActivityIndicatorView!
+
+    @IBOutlet weak var disConnectBtn: UIButton!
+    @IBOutlet weak var connectBtn: UIButton!
+    //    var disConnectBtn: UIButton!
+//    var connectBtn: UIButton!
     
     //MARK: - Override Methods
     override func viewDidLoad() {
@@ -186,14 +190,12 @@ class ViewController: UIViewController {
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        self.activityView.stopAnimating()
-        
         //就是如果加了这句的话，如果本来连接上了之后还没有拿到character的时候就到这一步了，那么就有问题了呀！但是转场取消直接没按扭了，所以使用再下面一句
 //        if BlueToothCentral.characteristic == nil {
-//            self.ConnectBtn.isHidden = false
+//            self.connectBtn.isHidden = false
 //        }
         if BlueToothCentral.peripheral == nil {
-            self.ConnectBtn.isHidden = false
+            self.connectBtn.isHidden = false
         }
     }
 }
@@ -207,9 +209,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         //过了一会儿没连上怎么办？
 //        DispatchQueue.main.asyncAfter(deadline: .now()+5) { [unowned self] in
 //            if self.peripheral == nil {
-//                self.activityView.stopAnimating()
-//                self.activityView.isHidden = true
-//                self.ConnectBtn.isHidden = false
+//                self.connectBtn.isHidden = false
 //            }
 //            let ac = UIAlertController(title: "Not Found", message: "Please check if the peripheral is OK!", preferredStyle: .alert)
 //            ac.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
@@ -219,10 +219,8 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         self.navigationController?.pushViewController(scanTableController, animated: true)
 //        self.navigationController?.modalTransitionStyle = .coverVertical
 //        self.navigationController?.present(scanTableController, animated: true)
-        ConnectBtn.isHidden = true
-        activityView.isHidden = false
-        activityView.startAnimating()
-//        ConnectBtn.removeFromSuperview()
+        connectBtn.isHidden = true
+//        connectBtn.removeFromSuperview()
 //        blurView.contentView.addSubview(disConnectBtn)
     }
     @objc func blueBtnMethod(_ sender: UIButton) {
@@ -238,7 +236,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         case .poweredOn:
             BlueToothCentral.isBlueOn = true
             DispatchQueue.main.sync {
-                ConnectBtn.isHidden = false
+                connectBtn.isHidden = false
                 self.title = "UnConnected"
             }
 //            BlueToothCentral.centralManager.scanForPeripherals(withServices: nil, options: nil)
@@ -249,14 +247,14 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                     self.navigationController?.popViewController(animated: true)
                 }
                 self.disConnectBtn.isHidden = true
-                self.ConnectBtn.isHidden = true
+                self.connectBtn.isHidden = true
                 allBtnisHidden(true)
                 self.title = ""
             }
             DispatchQueue.main.asyncAfter(deadline: .now()+0.25) { [unowned self] in
                 //貌似转场没结束，直接按钮隐身是没用的，所以只能after动画结束了难受
                 self.disConnectBtn.isHidden = true
-                self.ConnectBtn.isHidden = true
+                self.connectBtn.isHidden = true
             }
             if BlueToothCentral.peripheral != nil {
                 centralManager(BlueToothCentral.centralManager, didDisconnectPeripheral: BlueToothCentral.peripheral, error: nil)
@@ -301,10 +299,8 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         //注意self.title这个也需要在主线程
         DispatchQueue.main.sync { [unowned self] in
             self.title = peripheral.name
-            self.activityView.stopAnimating()
-            self.activityView.isHidden = true
             self.disConnectBtn.isHidden = false
-            self.ConnectBtn.isHidden = true
+            self.connectBtn.isHidden = true
             self.allBtnisHidden(false)
             //注意在手势触发蓝牙扫描转场的时候，因为在Transition这一个类里面，所以无法对我们的按钮进行操控（也就是不能像startBlueTooth方法一样对connectbtn隐藏，且使activityView动画），所以为了稍微正常一点，我把connectbtn的隐藏在这下面也写一下，activityView就没有动画了，反正也被遮住了看不到🤦‍♂️。
             self.navigationController?.popViewController(animated: true)
@@ -327,15 +323,11 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             self.allBtnisHidden(true)
             if BlueToothCentral.isBlueOn {
                 self.disConnectBtn.isHidden = true
-                self.activityView.isHidden = true
-                self.activityView.stopAnimating()
-                self.ConnectBtn.isHidden = false
+                self.connectBtn.isHidden = false
                 self.title = "UnConnected"
             } else {
                 self.disConnectBtn.isHidden = true
-                self.activityView.isHidden = true
-                self.activityView.stopAnimating()
-                self.ConnectBtn.isHidden = true
+                self.connectBtn.isHidden = true
                 self.title = ""
             }
         }
@@ -375,7 +367,11 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         propertyStr = ""
         if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
             BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
-            self.propertyStr += "Read\n"
+            if propertyStr != "" {
+                self.propertyStr += "\nRead"
+            } else {
+                self.propertyStr += "Read"
+            }
             DispatchQueue.main.async {
                 self.receiveBtn.isEnabled = true
                 self.receiveBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
@@ -391,7 +387,11 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         
         if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
             BlueToothCentral.peripheral.setNotifyValue(true, for: BlueToothCentral.characteristic)
-            self.propertyStr += "Notify\n"
+            if propertyStr != "" {
+                self.propertyStr += "\nNotify"
+            } else {
+                self.propertyStr += "Notify"
+            }
         } else {
             print("cannot notify")
         }
@@ -400,13 +400,21 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         self.writeType = nil
         if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.write.rawValue) != 0 {
             self.writeType = CBCharacteristicWriteType.withResponse
-            propertyStr += "WriteWithResponse\n"
+            if propertyStr != "" {
+                self.propertyStr += "\nWriteWithResponse"
+            } else {
+                self.propertyStr += "WriteWithResponse"
+            }
         } else {
             print("cannot writeWithResponse")
         }
         if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.writeWithoutResponse.rawValue) != 0 {
             self.writeType = CBCharacteristicWriteType.withoutResponse
-            propertyStr += "WriteWithoutResponse\n"
+            if propertyStr != "" {
+                self.propertyStr += "\nWriteWithoutResponse"
+            } else {
+                self.propertyStr += "WriteWithoutResponse"
+            }
         } else {
             print("cannot writeWithoutResponse")
         }
@@ -422,7 +430,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
     }
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        print("Updated")
+//        print("Updated")
         if let error = error {
             print(error.localizedDescription)
         } else {
@@ -468,20 +476,26 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                 }
                 values = dataInt.joined(separator: " ")
             case .ASCII:
+//                print("Hexadecimal receive: " + valueStr)
                 var dataInt = [String]()
                 for uint8str in valueStrs {
                     if let uint8 = UInt8(uint8str, radix: 16) {
-                        dataInt.append("\(Character(UnicodeScalar(uint8)))")
-//                        print("\(Character(UnicodeScalar(uint8)))")
+                        if (uint8 >= 1 && uint8 <= 8) || (uint8 >= 11 && uint8 <= 12) || (uint8 >= 14 && uint8 <= 31) || (uint8 == 127 ) {
+                            dataInt.append(uint8str)
+                        } else {
+                            let char = Character(UnicodeScalar(uint8))
+                            dataInt.append("\(char)")
+                        }
+                    }
+                }
+                if dataInt.last == "\n" {
+                    dataInt.removeLast()
+                    if dataInt.last == "\r" {
+                        dataInt.removeLast()
                     }
                 }
                 values = dataInt.joined(separator: " ")
-                //若接收到的不是127还是128以内的（应该127），这样接收字符串可能要Unicode或者别的什么的编码，可是没有找到合适的函数。。先不写了。
-//                let scanner = Scanner(string: valueStr)
-//                var result:UInt32 = 0
-//                scanner.scanHexInt32(&result)
-//                print(Character(UnicodeScalar(0x1F79C)!))
-//                receiveStr += "\(UnicodeScalar(0x1F79C)!) \(Character(UnicodeScalar(0x1F79C)!))"
+//                print("Hexadecimal receive: " + values)
             }
             
             receiveStr += "\(values)\n"
@@ -567,8 +581,40 @@ extension ViewController {
                 }
             }
         case .ASCII:
-            //ASCII发送不需要分开转换的吧？
-            if let _ = sendStr.data(using: .utf8){
+            var isRight = true
+            var slashCount = 0
+            var sendStrCopy = sendStr
+            while sendStrCopy.last == "\\"{
+                slashCount += 1
+                sendStrCopy.removeLast()
+            }
+            if slashCount % 2 != 0 {
+                isRight = false
+            }
+            while sendStrCopy.contains(#"\"#) {
+                let index = sendStrCopy.firstIndex(of: "\\")!
+                let secondIndex = sendStrCopy.index(after: index)
+                
+                switch sendStrCopy[secondIndex] {
+                case "\\":
+                    sendStrCopy.remove(at: index)
+                    fallthrough
+                case "0":
+                    fallthrough
+                case "t":
+                    fallthrough
+                case "n":
+                    fallthrough
+                case "r":
+                    sendStrCopy.remove(at: index)
+                default:
+                    isRight = false
+                    sendStrCopy.remove(at: index)
+                    break
+                }
+            }
+            if let _ = sendStr.data(using: .utf8), isRight {
+                
             } else {
                 self.sendTextView.layer.borderColor = self.receiveCleraBtn.backgroundColor?.cgColor
                 self.sendTextView.layer.borderWidth = 1.5
@@ -603,7 +649,7 @@ extension ViewController {
                     return nil
                 }
             }
-            return Data(bytes: uint8s)
+            return Data(uint8s)
         case .Hexadecimal:
             for number in numbers {
                 if let uint8 = UInt8(number, radix: 16) {
@@ -612,15 +658,65 @@ extension ViewController {
                     return nil
                 }
             }
-            return Data(bytes: uint8s)
+            return Data(uint8s)
         case .ASCII:
+            //终于知道了，转义字符从text中读取的时候，会给它前面默认加一个"\"变成非转义的"\"所以就出现了我下面的很多错误了
             //转义字符: 由于单个转换，无法..
-            if sendStr.hasSuffix("\n") || sendStr.hasSuffix("\r") {
+            //目前是感觉\n直接被编译器那个了，所以我要多加一个\n试试？  或者把他们一个个转成UnicodeScalar("\n").value这样，还是用UInt8发送（目前证实这条根本不对，从view的textf读入已经自动加了"\"导致错误了）
+            
+            //现在还有一个问题，就是没来就想是一个\一个n的现在就没解决了
+            var sendStrCopy = sendStr
+            var slashIndexs = [String.Index]()
+            while sendStrCopy.contains(#"\"#) {
+                let index = sendStrCopy.firstIndex(of: "\\")!
                 
+                let secondIndex = sendStrCopy.index(after: index)
+                
+                switch sendStrCopy[secondIndex] {
+                case "0":
+                    sendStrCopy.insert("\0", at: index)
+                    sendStrCopy.remove(at: secondIndex)
+                    sendStrCopy.remove(at: secondIndex)
+                case "t":
+                    sendStrCopy.insert("\t", at: index)
+                    sendStrCopy.remove(at: secondIndex)
+                    sendStrCopy.remove(at: secondIndex)
+                case "n":
+                    sendStrCopy.insert("\n", at: index)
+                    sendStrCopy.remove(at: secondIndex)
+                    sendStrCopy.remove(at: secondIndex)
+                case "r":
+                    sendStrCopy.insert("\r", at: index)
+                    sendStrCopy.remove(at: secondIndex)
+                    sendStrCopy.remove(at: secondIndex)
+                case "\\":
+                    slashIndexs.append(index)
+                    sendStrCopy.remove(at: index)
+                    sendStrCopy.remove(at: index)
+                default:
+                    break
+                }
+            }
+            for index in slashIndexs.reversed() {
+                sendStrCopy.insert(#"\"#, at: index)
             }
             
-            //ASCII发送不需要分开转换的吧?    zhuanyi
-            return sendStr.data(using: .utf8)
+            //            print(sendStr.debugDescription)
+//            print(sendStrCopy)
+//            print(sendStrCopy.debugDescription)
+            
+            return sendStrCopy.data(using: .utf8)
+            //            return sendStr.data(using: .ascii)
+            
+            //本来想先转为ASCII码，再转成data发送的。因为一开始没有发现读入字符串后转义变非转义的问题，然后因为写了这个打印了一下知道了错误所在
+            //            for scalar in sendStr.unicodeScalars {
+            //                if scalar.value < 256 {
+            //                    uint8s.append(UInt8(scalar.value))
+            //                }
+            //            }
+            //            print(uint8s)
+            //            return Data(uint8s)
+            
         }
     }
     
@@ -638,34 +734,34 @@ extension ViewController {
 
 
 //MARK: - Extral Displays
+
 extension ViewController {
     func blueDisplay() {
-        let visualEffect = UIBlurEffect(style: .dark)
+//        let visualEffect = UIBlurEffect(style: .dark)
+//
+//        let blurView = UIVisualEffectView(effect: visualEffect)
+//        blurView.frame = CGRect(x: self.view.bounds.width-120, y: self.view.bounds.height*0.75, width: 100, height: 100)
+//        blurView.alpha = 0.7
+//        blurView.layer.cornerRadius = 10
+//        blurView.clipsToBounds = true
         
-        let blurView = UIVisualEffectView(effect: visualEffect)
-        //        self.blurView = blurView
-        blurView.frame = CGRect(x: self.view.bounds.width-120, y: self.view.bounds.height-175, width: 100, height: 100)
-        blurView.alpha = 0.7
-        blurView.layer.cornerRadius = 10
-        blurView.clipsToBounds = true
-        
-        ConnectBtn = UIButton(type: .custom)
-        ConnectBtn.addTarget(self, action: #selector(blueBtnMethod(_:)), for: .touchUpInside)
-        ConnectBtn.frame = CGRect(x: 10, y: 10, width: 80, height: 80)
+//        connectBtn = UIButton(type: .custom)
+        connectBtn.addTarget(self, action: #selector(blueBtnMethod(_:)), for: .touchUpInside)
+//        connectBtn.frame = visualEffectView.bounds
         //        blueBtn.tintColor = UIColor.white
         //        blueBtn.titleLabel?.text = "OK"
-        ConnectBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
-        ConnectBtn.titleLabel?.textAlignment = .center
-        ConnectBtn.isHidden = false
-        ConnectBtn.setTitle("Not OK", for: .normal)
-        ConnectBtn.setTitle("ScanPer", for: .highlighted)
-        ConnectBtn.setTitleColor(UIColor.white, for: .normal)
-        ConnectBtn.setTitleColor(UIColor.red, for: .highlighted)
-        blurView.contentView.addSubview(ConnectBtn) //必须添加到contentView
+        connectBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+        connectBtn.titleLabel?.textAlignment = .center
+        connectBtn.isHidden = false
+        connectBtn.setTitle("Not OK", for: .normal)
+        connectBtn.setTitle("ScanPer", for: .highlighted)
+        connectBtn.setTitleColor(UIColor.white, for: .normal)
+        connectBtn.setTitleColor(UIColor.red, for: .highlighted)
+        visualEffectView.contentView.addSubview(connectBtn) //必须添加到contentView
         
-        disConnectBtn = UIButton(type: .custom)
+//        disConnectBtn = UIButton(type: .custom)
         disConnectBtn.addTarget(self, action: #selector(blueBtnMethod(_:)), for: .touchUpInside)
-        disConnectBtn.frame = CGRect(x: 10, y: 10, width: 80, height: 80)
+//        disConnectBtn.frame = visualEffectView.bounds
         //        blueBtn.tintColor = UIColor.white
         //        blueBtn.titleLabel?.text = "OK"
         disConnectBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
@@ -675,13 +771,13 @@ extension ViewController {
         disConnectBtn.setTitle("Discont", for: .highlighted)
         disConnectBtn.setTitleColor(UIColor.red, for: .normal)
         disConnectBtn.setTitleColor(UIColor.red, for: .highlighted)
-        blurView.contentView.addSubview(disConnectBtn) //必须添加到contentView
+        visualEffectView.contentView.addSubview(disConnectBtn) //必须添加到contentView
         
-        activityView = UIActivityIndicatorView(style: .white)
-        activityView.frame = CGRect(x: 10, y: 10, width: 80, height: 80)
-        activityView.isHidden = true
-        blurView.contentView.addSubview(activityView)
+//        activityView = UIActivityIndicatorView(style: .white)
+//        activityView.frame = CGRect(x: 0, y: 0, width: 80, height: 80)
+//        activityView.isHidden = true
+//        visualEffectView.contentView.addSubview(activityView)
         
-        self.view.addSubview(blurView)
+//        self.view.addSubview(blurView)
     }
 }

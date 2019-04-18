@@ -479,8 +479,9 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 //                print("Hexadecimal receive: " + valueStr)
                 var dataInt = [String]()
                 for uint8str in valueStrs {
+                    //本来16进制的00，也即\0是C语言字符串结束标志位，但是显示又显示不出来的篓，我这边也还是变为16进制00算了
                     if let uint8 = UInt8(uint8str, radix: 16) {
-                        if (uint8 >= 1 && uint8 <= 8) || (uint8 >= 11 && uint8 <= 12) || (uint8 >= 14 && uint8 <= 31) || (uint8 == 127 ) {
+                        if (uint8 >= 0 && uint8 <= 8) || (uint8 >= 11 && uint8 <= 12) || (uint8 >= 14 && uint8 <= 31) || (uint8 == 127 ) {
                             dataInt.append(uint8str)
                         } else {
                             let char = Character(UnicodeScalar(uint8))
@@ -529,6 +530,7 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
         }
         return true
     }
+    
     @objc func tapAction(_ gestureRecognizer: UITapGestureRecognizer) {
         
 //        self.textField.resignFirstResponder()
@@ -591,11 +593,77 @@ extension ViewController {
             if slashCount % 2 != 0 {
                 isRight = false
             }
-            while sendStrCopy.contains(#"\"#) {
+            
+            while sendStrCopy.contains(#"\"#) && isRight {
                 let index = sendStrCopy.firstIndex(of: "\\")!
                 let secondIndex = sendStrCopy.index(after: index)
                 
                 switch sendStrCopy[secondIndex] {
+                case "u":
+                    var number = 0
+                    //u后面起码还要有三个"{" "number" "}"
+                    //请注意：endindex是一个sequence的结尾，但不是最后一个元素，就像C语言的字符串结尾EOF，是不能访问的
+                    var indexcc = sendStrCopy.index(after: secondIndex)
+                    if indexcc == sendStrCopy.endIndex { isRight = false; break }
+                    if sendStrCopy[indexcc] != "{" {
+                        isRight = false
+                        break
+                    }
+                    
+                    let indexstart = sendStrCopy.index(after: indexcc)
+                    indexcc = sendStrCopy.index(after: indexcc)
+                    if indexcc == sendStrCopy.endIndex { isRight = false; break }
+                    
+                    while(sendStrCopy[indexcc] != "}" ) {
+                        number += 1
+                        
+                        indexcc = sendStrCopy.index(after: indexcc)
+                        if indexcc == sendStrCopy.endIndex {
+                            isRight = false
+                            break
+                        }
+                    }
+                    
+                    //while里面出来后要判断一下是否是搜索到了}
+                    if indexcc == sendStrCopy.endIndex {
+                        isRight = false
+                        break
+                    }
+                    
+                    if number == 0 {
+                        isRight = false
+                        break
+                    }
+                    
+                    var valueString = sendStrCopy[indexstart..<indexcc]
+                    print(valueString)
+                    //uint8<128的时候好一点，但是大于127之后删除后这个字符串会出问题，目前不知道原因
+                    if valueString.hasPrefix("0x") && number>=2 {
+                        valueString.removeFirst()
+                        valueString.removeFirst()
+                        
+                        if let uint8 = UInt8(valueString, radix: 16) {
+                            sendStrCopy.insert(Character(UnicodeScalar(uint8)), at: index)
+                            
+                            for _ in 0...3+number {
+                                sendStrCopy.remove(at: secondIndex)
+                            }
+                        } else {
+                            isRight = false
+                            break
+                        }
+                    } else if let uint8 = UInt8(valueString), uint8<128 {
+                        print(Character(UnicodeScalar(uint8)))
+                        sendStrCopy.insert(Character(UnicodeScalar(uint8)), at: index)
+                        
+                        for _ in 0...3+number {
+                            sendStrCopy.remove(at: secondIndex)
+                        }
+//                        print(sendStrCopy)
+                    } else {
+                        isRight = false
+                    }
+                    
                 case "\\":
                     sendStrCopy.remove(at: index)
                     fallthrough
@@ -613,6 +681,7 @@ extension ViewController {
                     break
                 }
             }
+            
             if let _ = sendStr.data(using: .utf8), isRight {
                 
             } else {
@@ -693,6 +762,37 @@ extension ViewController {
                     slashIndexs.append(index)
                     sendStrCopy.remove(at: index)
                     sendStrCopy.remove(at: index)
+                case "u":
+                    var number = 0
+                    var indexcc = sendStrCopy.index(after: secondIndex)
+                    
+                    let indexstart = sendStrCopy.index(after: indexcc)
+                    indexcc = sendStrCopy.index(after: indexcc)
+                    
+                    while(sendStrCopy[indexcc] != "}") {
+                        number += 1
+                        indexcc = sendStrCopy.index(after: indexcc)
+                    }
+                    
+                    var valueString = sendStrCopy[indexstart..<indexcc]
+                    if valueString.hasPrefix("0x") && number>=2 {
+                        valueString.removeFirst()
+                        valueString.removeFirst()
+                        
+                        if let uint8 = UInt8(valueString, radix: 16) {
+                            sendStrCopy.insert(Character(UnicodeScalar(uint8)), at: index)
+                            
+                            for _ in 0...3+number {
+                                sendStrCopy.remove(at: secondIndex)
+                            }
+                        }
+                    } else if let uint8 = UInt8(valueString) {
+                        sendStrCopy.insert(Character(UnicodeScalar(uint8)), at: index)
+                        
+                        for _ in 0...3+number {
+                            sendStrCopy.remove(at: secondIndex)
+                        }
+                    }
                 default:
                     break
                 }
@@ -701,9 +801,8 @@ extension ViewController {
                 sendStrCopy.insert(#"\"#, at: index)
             }
             
-            //            print(sendStr.debugDescription)
-//            print(sendStrCopy)
-//            print(sendStrCopy.debugDescription)
+            print(sendStrCopy)
+            print(sendStrCopy.debugDescription)
             
             return sendStrCopy.data(using: .utf8)
             //            return sendStr.data(using: .ascii)
@@ -734,7 +833,6 @@ extension ViewController {
 
 
 //MARK: - Extral Displays
-
 extension ViewController {
     func blueDisplay() {
 //        let visualEffect = UIBlurEffect(style: .dark)

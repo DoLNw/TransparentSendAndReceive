@@ -482,7 +482,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                     //本来16进制的00，也即\0是C语言字符串结束标志位，但是显示又显示不出来的篓，我这边也还是变为16进制00算了
                     if let uint8 = UInt8(uint8str, radix: 16) {
                         if (uint8 >= 0 && uint8 <= 8) || (uint8 >= 11 && uint8 <= 12) || (uint8 >= 14 && uint8 <= 31) || (uint8 == 127 ) {
-                            dataInt.append(uint8str)
+                            dataInt.append("\\u{\(uint8)}") //让其显示十进制的
                         } else {
                             let char = Character(UnicodeScalar(uint8))
                             dataInt.append("\(char)")

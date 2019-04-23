@@ -9,6 +9,7 @@
 import UIKit
 import AVFoundation
 import CoreBluetooth
+import AudioToolbox
 
 enum SendAndReceiveType: String {
     case Decimal
@@ -226,6 +227,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     @objc func blueBtnMethod(_ sender: UIButton) {
         if sender.currentTitle == "ScanPer" {
             startBlueTooth()
+            AudioServicesPlaySystemSound(1519)
         } else if sender.currentTitle == "Discont" {
             guard BlueToothCentral.peripheral != nil else { return }
             BlueToothCentral.centralManager.cancelPeripheralConnection(BlueToothCentral.peripheral)
@@ -311,6 +313,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         print("didDisconnectPeripheral: ")
+        AudioServicesPlaySystemSound(1521)
         BlueToothCentral.peripheral = nil
         BlueToothCentral.characteristic = nil
         DispatchQueue.main.async { [unowned self] in

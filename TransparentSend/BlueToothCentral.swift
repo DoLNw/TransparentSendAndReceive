@@ -17,6 +17,10 @@ class BlueToothCentral {
     static var isFirstPer = false
     static var centralManager: CBCentralManager!
     static var peripheral: CBPeripheral!
-    static var characteristic: CBCharacteristic!
-
+    
+    static var characteristic: CBCharacteristic!   //写
+    static var notifyCharacteristic: CBCharacteristic!
+    static var readCharacteristic: CBCharacteristic!
+    static var characteristics = [CBService: [CBCharacteristic]]()
+    static var services = [CBService]()
 }

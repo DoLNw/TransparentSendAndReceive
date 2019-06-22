@@ -29,6 +29,28 @@ enum SendAndReceiveType: String {
 }
 
 class ViewController: UIViewController {
+    @IBOutlet weak var rtthreadVisualBackground: UIVisualEffectView!
+    @IBOutlet weak var rtthreadTextView: UITextView!
+    var showRTThread = false
+    var rtthreadStr = "" {
+        didSet {
+            DispatchQueue.main.async { [unowned self] in
+                self.rtthreadTextView.text = self.rtthreadStr
+                self.rtthreadTextView.scrollRangeToVisible(NSRange(location:self.rtthreadTextView.text.lengthOfBytes(using: .utf8), length: 1))
+            }
+        }
+    }
+    var rtthreadSendStr = ""
+    
+    @IBAction func chooseChartistic(_ sender: Any) {
+//        let chooseViewController = ChooseCharViewController()
+//        self.navigationController?.pushViewController(chooseViewController, animated: true)
+    }
+    
+    
+    
+    
+    
     @IBOutlet weak var visualEffectView: UIVisualEffectView!
     
     let blueToothCentral = BlueToothCentral()
@@ -42,26 +64,12 @@ class ViewController: UIViewController {
             }
         }
     }
-    
+        
     //目前服务还没有给出选择，特征还是要给出一个隐藏的数字的，为了方便。
     @IBOutlet weak var charNumSelectTextLabel: UITextField!
     @IBOutlet weak var serviceNumSelectLabel: UITextField!
-    @IBAction func changeCharAndSerAct(_ sender: UIButton) {
-        guard BlueToothCentral.peripheral != nil else { return }
-        
-        //由于之前的还在，要取消之前的通知
-        if BlueToothCentral.characteristic.isNotifying {
-            BlueToothCentral.peripheral.setNotifyValue(false, for: BlueToothCentral.characteristic)
-        }
-        BlueToothCentral.peripheral.discoverServices(nil)
-        self.charNumSelectTextLabel.resignFirstResponder()
-        self.serviceNumSelectLabel.resignFirstResponder()
-    }
-    
-    
+
     //留了两个label本来做信号指示的，但是貌似label的background不能动画，先留一下吧。。。。
-    @IBOutlet weak var sendLabel: UILabel!
-    @IBOutlet weak var receiveLabel: UILabel!
     @IBOutlet weak var receiveCleraBtn: UIButton!
     @IBAction func sendClearAct(_ sender: UIButton) {
         self.sendTextView.text = ""
@@ -140,11 +148,19 @@ class ViewController: UIViewController {
     
     @IBOutlet weak var receiveBtn: UIButton!
     @IBOutlet weak var receiveTextView: UITextView!
+    @IBOutlet weak var receiveBigTextView: UITextView!
+    var showBigger = false
+    
     var receiveStr = "" {
         didSet {
-            DispatchQueue.main.async {
-                self.receiveTextView.text = self.receiveStr
-                self.receiveTextView.scrollRangeToVisible(NSRange(location:self.receiveTextView.text.lengthOfBytes(using: .utf8), length: 1))
+            DispatchQueue.main.async { [unowned self] in
+                if (self.showBigger) {
+                    self.receiveBigTextView.text = self.receiveStr
+                    self.receiveBigTextView.scrollRangeToVisible(NSRange(location:self.receiveBigTextView.text.lengthOfBytes(using: .utf8), length: 1))
+                } else {
+                    self.receiveTextView.text = self.receiveStr
+                    self.receiveTextView.scrollRangeToVisible(NSRange(location: self.receiveStr.lengthOfBytes(using: .utf8), length: 1))
+                }
             }
         }
     }
@@ -155,8 +171,8 @@ class ViewController: UIViewController {
             return
         }
         //这里可以加一个判断，看看这个蓝牙的服务的特征是否是可读的，然后再读取呀！
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
-            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
+        if (BlueToothCentral.readCharacteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
+            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.readCharacteristic)
         } else {
             print("cannot read")
             receiveStr += "cannot read\n"
@@ -182,12 +198,30 @@ class ViewController: UIViewController {
         tapGesture.delegate = self
         self.view.addGestureRecognizer(tapGesture)
         
-//        self.receiveTextView.delegate = self
         self.sendTextView.delegate = self
+        self.rtthreadTextView.delegate = self
         
         self.sendTextView.layer.cornerRadius = 3.5
         self.sendTextView.clipsToBounds = true
         
+        self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+        self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+        
+        let doubleTapGesture1 = UITapGestureRecognizer(target: self, action: #selector(doubleTapAct(_:)))
+        doubleTapGesture1.numberOfTapsRequired = 2
+        let doubleTapGesture2 = UITapGestureRecognizer(target: self, action: #selector(doubleTapAct(_:)))
+        doubleTapGesture2.numberOfTapsRequired = 2
+        //因为
+        self.receiveTextView.addGestureRecognizer(doubleTapGesture1)
+        self.receiveBigTextView.addGestureRecognizer(doubleTapGesture2)
+        
+        let doubleTapGesture3 = UITapGestureRecognizer(target: self, action: #selector(doubleDoubleTapAct(_:)))
+        doubleTapGesture3.numberOfTapsRequired = 2
+        doubleTapGesture3.numberOfTouchesRequired = 2
+        self.receiveTextView.addGestureRecognizer(doubleTapGesture3)
+        let doubleTapGesture4 = UITapGestureRecognizer(target: self, action: #selector(doubleDoubleTapAct(_:)))
+        doubleTapGesture4.numberOfTapsRequired = 2
+        self.rtthreadTextView.addGestureRecognizer(doubleTapGesture4)
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -334,6 +368,9 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                 self.title = ""
             }
         }
+        
+        BlueToothCentral.services.removeAll()
+        BlueToothCentral.characteristics.removeAll()
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
@@ -341,10 +378,19 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         DispatchQueue.main.sync { [unowned self] in
             if let text = self.serviceNumSelectLabel.text, let num = Int(text), ((peripheral.services?.count)!>=num) {
                 peripheral.discoverCharacteristics(nil, for: ((peripheral.services?[num-1])!))
-                print((peripheral.services?[num-1])!)
+//                print((peripheral.services?[num-1])!)
             } else {
-                peripheral.discoverCharacteristics(nil, for: (peripheral.services?.first)!)
-                print((peripheral.services?.first)!)
+                for service in peripheral.services! {
+                    if let _ = BlueToothCentral.characteristics[service] {
+                        continue
+                    } else {
+                        BlueToothCentral.characteristics[service] = [CBCharacteristic]()
+                        BlueToothCentral.services.append(service)
+                        peripheral.discoverCharacteristics(nil, for: service)
+                    }
+                    
+                }
+//                print((peripheral.services?.first)!)
                 if self.serviceNumSelectLabel.text != "" {
                     self.serviceNumSelectLabel.text = "1"
                 }
@@ -358,7 +404,15 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             if let text = self.charNumSelectTextLabel.text, let num = Int(text), ((service.characteristics?.count)!>=num) {
                 BlueToothCentral.characteristic = service.characteristics?[num-1]
             } else {
+                if let _ = BlueToothCentral.characteristics[service] {
+                    for charactistic in service.characteristics! {
+                        BlueToothCentral.characteristics[service]?.append(charactistic)
+                    }
+                }
+                
                 BlueToothCentral.characteristic = service.characteristics?.first
+                BlueToothCentral.readCharacteristic = service.characteristics?.first
+                BlueToothCentral.notifyCharacteristic = service.characteristics?.first
                 if self.charNumSelectTextLabel.text != "" {
                     self.charNumSelectTextLabel.text = "1"
                 }
@@ -366,7 +420,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         }
         
 //        BlueToothCentral.characteristic = service.characteristics?.last
-        print(BlueToothCentral.characteristic!)
+//        print(BlueToothCentral.characteristic!)
         propertyStr = ""
         if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
             BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
@@ -484,6 +538,16 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                 for uint8str in valueStrs {
                     //本来16进制的00，也即\0是C语言字符串结束标志位，但是显示又显示不出来的篓，我这边也还是变为16进制00算了
                     if let uint8 = UInt8(uint8str, radix: 16) {
+                        //如果我发送tab按键，它会自动补全代码，所以它会先发送回退键\b，tab键前面有几个单词就几个t回退键，我要处理好这个
+                        if showRTThread {
+                            if uint8 == 8 {
+                                if self.rtthreadStr.count >= 1 {
+                                    self.rtthreadStr.removeLast()
+                                    continue
+                                }
+                            }
+                        }
+                        
                         if (uint8 >= 0 && uint8 <= 8) || (uint8 >= 11 && uint8 <= 12) || (uint8 >= 14 && uint8 <= 31) || (uint8 == 127 ) {
                             dataInt.append("\\u{\(uint8)}") //让其显示十进制的
                         } else {
@@ -498,11 +562,19 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                         dataInt.removeLast()
                     }
                 }
-                values = dataInt.joined(separator: " ")
+//                values = dataInt.joined(separator: " ")
+                values = dataInt.joined(separator: "")
 //                print("Hexadecimal receive: " + values)
             }
             
-            receiveStr += "\(values)\n"
+            
+            if (showRTThread) {
+                //它不是一次性要的全部发完的，所以我此处不加换行，而且我下面输入的时候f打了换行也是换行的，所以此处也全部不加了直接
+                receiveStr += "\(values)"
+                rtthreadStr = receiveStr
+            } else {
+                receiveStr += "\(values)\n"
+            }
         }
     }
     
@@ -523,16 +595,74 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
         return false
     }
     func textViewDidEndEditing(_ textView: UITextView) {
-        self.checkSendData()
+        if textView.tag == 111 {
+            self.checkSendData()
+        } else if textView.tag == 222 {
+            
+        }
     }
     //下面是实时监测输入的数字来实现return按键，因为它不像UITextField有shouldreturn代理。
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-        if text == "\n" {
-            textView.resignFirstResponder()
-            return false
+        if textView.tag == 111 {
+            if text == "\n" {
+                textView.resignFirstResponder()
+                return false
+            }
+        } else if textView.tag == 222 {
+//            self.rtthreadTextView.text = self.rtthreadStr
+            if text == "\t" {
+                rtthreadSendStr += text
+                BlueToothCentral.peripheral.writeValue(rtthreadSendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: .withoutResponse)
+                rtthreadSendStr = ""
+                return false
+            } else if text == "\n" {
+                if rtthreadSendStr == "back" {
+                    rtthreadTextView.resignFirstResponder()
+                    
+                    UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                        self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                        self.rtthreadVisualBackground.alpha = 0
+                    })
+                    
+                    UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                        self.receiveTextView.transform = .identity
+                        self.receiveTextView.alpha = 1
+                        self.navigationController?.navigationBar.alpha = 1
+                        self.tabBarController?.tabBar.alpha = 1
+                        }, completion: nil)
+                    
+                    rtthreadSendStr = ""
+                    return false
+                }
+                
+                rtthreadSendStr += text
+                BlueToothCentral.peripheral.writeValue(rtthreadSendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: .withoutResponse)
+                rtthreadSendStr = ""
+            } else if text == "" {  //这里面删除按钮就是啥都没有的输入，而不是退格键\b 🤦‍♂️,我发送tabj按键"\t"后tab键前面有多少个值，它就会给我多少个"\b"这个退格键。
+                if rtthreadSendStr.count >= 1 {
+                    rtthreadSendStr.removeLast()
+                } else {
+                    //理论上发送的已经没什么好删除的了，但是它显示的时候还是会删减掉的，我直接显示回来，等于没删除。
+                    self.rtthreadTextView.text = self.rtthreadStr
+                    return false
+                }
+            } else {
+                rtthreadSendStr += text
+            }
+            
+//            print(text.debugDescription)
+//            print(rtthreadSendStr)
         }
+        
         return true
+        //true if the old text should be replaced by the new text; false if the replacement operation should be aborted.这个return还是蛮重要的，如果我这个是truem，那么这个方法执行完后，text的h值还是要在textview显示的。
+        //return false就是我这个函数执行完后，这个text不会显示了。
     }
+    
+    func textViewDidChange(_ textView: UITextView) {
+        
+    }
+    
     
     @objc func tapAction(_ gestureRecognizer: UITapGestureRecognizer) {
         
@@ -541,8 +671,80 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
 //        self.textField.becomeFirstResponder()
         self.sendTextView.resignFirstResponder()
         self.receiveTextView.resignFirstResponder()
+        self.receiveBigTextView.resignFirstResponder()
         self.charNumSelectTextLabel.resignFirstResponder()
         self.serviceNumSelectLabel.resignFirstResponder()
+    }
+    
+    //点击两下放大或者接收屏幕
+    @objc func doubleTapAct(_ gestureRecognizer: UITapGestureRecognizer) {
+        sendTextView.resignFirstResponder()
+        
+        showBigger.toggle()
+        if (showBigger) {
+            self.receiveBigTextView.text = self.receiveStr
+            
+            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                self.receiveTextView.alpha = 0
+                self.navigationController?.navigationBar.alpha = 0
+                self.tabBarController?.tabBar.alpha = 0
+            })
+            
+            UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                self.receiveBigTextView.transform = .identity
+                self.receiveBigTextView.alpha = 1
+            }, completion: nil)
+        } else {
+            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                self.receiveBigTextView.alpha = 0
+            })
+            
+            UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                self.receiveTextView.transform = .identity
+                self.receiveTextView.alpha = 1
+                self.navigationController?.navigationBar.alpha = 1
+                self.tabBarController?.tabBar.alpha = 1
+                }, completion: nil)
+        }
+    }
+    
+    @objc func doubleDoubleTapAct(_ gestureRecognizer: UITapGestureRecognizer) {
+        sendTextView.resignFirstResponder()
+        
+        showRTThread.toggle()
+    
+        if (showRTThread) {
+            self.rtthreadStr = self.receiveStr
+            
+            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                self.receiveTextView.alpha = 0
+                self.navigationController?.navigationBar.alpha = 0
+                self.tabBarController?.tabBar.alpha = 0
+            })
+            
+            UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                self.rtthreadVisualBackground.transform = .identity
+                self.rtthreadVisualBackground.alpha = 1
+                }, completion: nil)
+        } else {
+            rtthreadSendStr = ""
+            rtthreadTextView.resignFirstResponder()
+            
+            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                self.rtthreadVisualBackground.alpha = 0
+            })
+            
+            UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                self.receiveTextView.transform = .identity
+                self.receiveTextView.alpha = 1
+                self.navigationController?.navigationBar.alpha = 1
+                self.tabBarController?.tabBar.alpha = 1
+                }, completion: nil)
+        }
     }
 }
 

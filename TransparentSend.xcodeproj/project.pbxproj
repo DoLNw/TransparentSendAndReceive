@@ -16,6 +16,7 @@
 		0217594721C4D46300C6A8CD /* SiriIntentUI.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0217593A21C4D46300C6A8CD /* SiriIntentUI.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0217594A21C4D46300C6A8CD /* SiriIntent.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0217593121C4D46300C6A8CD /* SiriIntent.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0217595D21C4E57900C6A8CD /* BlueDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0217595C21C4E57900C6A8CD /* BlueDelegate.swift */; };
+		0220D9F822BE501B003BF0E6 /* ChooseCharViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0220D9F722BE501B003BF0E6 /* ChooseCharViewController.swift */; };
 		02EA0EFE21BE4E5300E831F8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02EA0EFD21BE4E5300E831F8 /* AppDelegate.swift */; };
 		02EA0F0521BE4E5500E831F8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02EA0F0421BE4E5500E831F8 /* Assets.xcassets */; };
 		02EA0F0821BE4E5500E831F8 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 02EA0F0621BE4E5500E831F8 /* LaunchScreen.storyboard */; };
@@ -71,6 +72,7 @@
 		0217594221C4D46300C6A8CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
 		0217594421C4D46300C6A8CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0217595C21C4E57900C6A8CD /* BlueDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueDelegate.swift; sourceTree = "<group>"; };
+		0220D9F722BE501B003BF0E6 /* ChooseCharViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseCharViewController.swift; sourceTree = "<group>"; };
 		02EA0EFA21BE4E5300E831F8 /* TransparentSend.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TransparentSend.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02EA0EFD21BE4E5300E831F8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		02EA0F0421BE4E5500E831F8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 			children = (
 				02EA0EFD21BE4E5300E831F8 /* AppDelegate.swift */,
 				02EA0F1521BE4F1200E831F8 /* Main.storyboard */,
+				0220D9F722BE501B003BF0E6 /* ChooseCharViewController.swift */,
 				02EA0F0F21BE4F1200E831F8 /* ViewController.swift */,
 				0217592B21C4CE8500C6A8CD /* BlueToothCentral.swift */,
 				021758B721C3627300C6A8CD /* DesignateInputModeTextView.swift */,
@@ -330,6 +333,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0217592C21C4CE8500C6A8CD /* BlueToothCentral.swift in Sources */,
+				0220D9F822BE501B003BF0E6 /* ChooseCharViewController.swift in Sources */,
 				02EA0F1A21BE4F1200E831F8 /* Transition.swift in Sources */,
 				02EA0F1621BE4F1200E831F8 /* ViewController.swift in Sources */,
 				02EA0EFE21BE4E5300E831F8 /* AppDelegate.swift in Sources */,

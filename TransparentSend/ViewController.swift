@@ -20,11 +20,18 @@ enum SendAndReceiveType: String {
         switch self {
         case .Decimal:
             self = .Hexadecimal
+            print("1111")
         case .Hexadecimal:
             self = .ASCII
+            print("222")
         case .ASCII:
             self = .Decimal
+            print("333")
         }
+    }
+    
+    mutating func changeReceive(type to: SendAndReceiveType) {
+        self = to
     }
 }
 
@@ -36,25 +43,22 @@ class ViewController: UIViewController {
         didSet {
             DispatchQueue.main.async { [unowned self] in
                 self.rtthreadTextView.text = self.rtthreadStr
-                self.rtthreadTextView.scrollRangeToVisible(NSRange(location:self.rtthreadTextView.text.lengthOfBytes(using: .utf8), length: 1))
+                self.rtthreadTextView.scrollRangeToVisible(NSRange(location:self.rtthreadTextView.text.lengthOfBytes(using: .utf8)+300, length: 1))
             }
         }
     }
     var rtthreadSendStr = ""
     
     @IBAction func chooseChartistic(_ sender: Any) {
-//        let chooseViewController = ChooseCharViewController()
-//        self.navigationController?.pushViewController(chooseViewController, animated: true)
+        self.performSegue(withIdentifier: "goToChoose", sender: nil)
     }
-    
-    
-    
     
     
     @IBOutlet weak var visualEffectView: UIVisualEffectView!
     
     let blueToothCentral = BlueToothCentral()
     
+    var shouldCheck = true
     var writeType: CBCharacteristicWriteType?
     @IBOutlet weak var propertyTextView: UILabel!
     var propertyStr = "" {
@@ -80,17 +84,20 @@ class ViewController: UIViewController {
     }
     
     
-    var receiveType = SendAndReceiveType.Hexadecimal
+    var receiveType = SendAndReceiveType.ASCII
     @IBAction func receiveTypeAct(_ sender: UIButton) {
         receiveType.toggle()
         sender.setTitle(receiveType.rawValue, for: .normal)
     }
-    var sendType = SendAndReceiveType.Hexadecimal
+    @IBOutlet weak var receiveTypeBtn: UIButton!
+    
+    var sendType = SendAndReceiveType.ASCII
     @IBAction func sendTypeAct(_ sender: UIButton) {
         sendType.toggle()
         sender.setTitle(sendType.rawValue, for: .normal)
         self.checkSendData()
     }
+    @IBOutlet weak var sendTypeBtn: UITextView!
     
     //MARK: - IBOutlet
     @IBOutlet weak var senBtn: UIButton!
@@ -200,6 +207,7 @@ class ViewController: UIViewController {
         
         self.sendTextView.delegate = self
         self.rtthreadTextView.delegate = self
+//        NotificationCenter.default.addObserver(self, selector: <#T##Selector#>, name:UIKEy, object: nil)
         
         self.sendTextView.layer.cornerRadius = 3.5
         self.sendTextView.clipsToBounds = true
@@ -231,6 +239,29 @@ class ViewController: UIViewController {
 //        }
         if BlueToothCentral.peripheral == nil {
             self.connectBtn.isHidden = false
+        }
+        
+        if showRTThread {
+            self.navigationController?.navigationBar.alpha = 0
+            self.tabBarController?.tabBar.alpha = 0
+            
+            self.rtthreadTextView.resignFirstResponder()
+        }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if BlueToothCentral.peripheral == nil {
+            self.connectBtn.isHidden = false
+        }
+        
+        if showRTThread {
+            self.navigationController?.navigationBar.alpha = 0
+            self.tabBarController?.tabBar.alpha = 0
+            
+            self.rtthreadTextView.resignFirstResponder()
+            
         }
     }
 }
@@ -325,6 +356,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             
         }
         
+        self.rtthreadSendStr = ""
         
         print("didConnect: ")
         BlueToothCentral.peripheral = peripheral
@@ -371,121 +403,86 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         
         BlueToothCentral.services.removeAll()
         BlueToothCentral.characteristics.removeAll()
+        BlueToothCentral.characteristic = nil
+        BlueToothCentral.readCharacteristic = nil
+        BlueToothCentral.notifyCharacteristic = nil
+        
+        BlueToothCentral.writeServiceNum = 0
+        BlueToothCentral.writeCharNum = 0
+        BlueToothCentral.readServiceNum = 0
+        BlueToothCentral.readCharNum = 0
+        BlueToothCentral.notifyServiceNum = 0
+        BlueToothCentral.notifyCharNum = 0
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard BlueToothCentral.peripheral == peripheral else { return }
         DispatchQueue.main.sync { [unowned self] in
             if let text = self.serviceNumSelectLabel.text, let num = Int(text), ((peripheral.services?.count)!>=num) {
-                peripheral.discoverCharacteristics(nil, for: ((peripheral.services?[num-1])!))
-//                print((peripheral.services?[num-1])!)
+                BlueToothCentral.writeServiceNum = num
             } else {
-                for service in peripheral.services! {
-                    if let _ = BlueToothCentral.characteristics[service] {
-                        continue
-                    } else {
-                        BlueToothCentral.characteristics[service] = [CBCharacteristic]()
-                        BlueToothCentral.services.append(service)
-                        peripheral.discoverCharacteristics(nil, for: service)
-                    }
-                    
-                }
-//                print((peripheral.services?.first)!)
+                BlueToothCentral.writeServiceNum = 1
                 if self.serviceNumSelectLabel.text != "" {
                     self.serviceNumSelectLabel.text = "1"
                 }
             }
         }
+        
+        for service in peripheral.services! {
+            if let _ = BlueToothCentral.characteristics[service] {
+                continue
+            } else {
+                BlueToothCentral.characteristics[service] = [CBCharacteristic]()
+                BlueToothCentral.services.append(service)
+                peripheral.discoverCharacteristics(nil, for: service)
+            }
+        }
     }
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         guard BlueToothCentral.peripheral == peripheral else { return }
+        if let _ = BlueToothCentral.characteristics[service] {
+            for charactistic in service.characteristics! {
+                BlueToothCentral.characteristics[service]?.append(charactistic)
+            }
+        }
+        
         //此处last还是first有讲究吗？我记得之前一直设置订阅订阅不上去的，怎么解决的?这里要sync而不是async
         DispatchQueue.main.sync { [unowned self] in
-            if let text = self.charNumSelectTextLabel.text, let num = Int(text), ((service.characteristics?.count)!>=num) {
-                BlueToothCentral.characteristic = service.characteristics?[num-1]
-            } else {
-                if let _ = BlueToothCentral.characteristics[service] {
-                    for charactistic in service.characteristics! {
-                        BlueToothCentral.characteristics[service]?.append(charactistic)
+            if let text = self.charNumSelectTextLabel.text, let num = Int(text) {
+                if BlueToothCentral.services.count == BlueToothCentral.writeServiceNum {
+                    if (service.characteristics?.count)! >= num {
+                        BlueToothCentral.writeCharNum = num
+                    } else {
+                        BlueToothCentral.writeCharNum = 1
+                        if self.charNumSelectTextLabel.text != "" {
+                            self.charNumSelectTextLabel.text = "1"
+                        }
                     }
                 }
-                
-                BlueToothCentral.characteristic = service.characteristics?.first
-                BlueToothCentral.readCharacteristic = service.characteristics?.first
-                BlueToothCentral.notifyCharacteristic = service.characteristics?.first
+            } else {
+                BlueToothCentral.writeCharNum = 1
                 if self.charNumSelectTextLabel.text != "" {
                     self.charNumSelectTextLabel.text = "1"
                 }
             }
         }
         
-//        BlueToothCentral.characteristic = service.characteristics?.last
-//        print(BlueToothCentral.characteristic!)
-        propertyStr = ""
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
-            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.characteristic)
-            if propertyStr != "" {
-                self.propertyStr += "\nRead"
-            } else {
-                self.propertyStr += "Read"
-            }
+        if BlueToothCentral.writeServiceNum != 0 && BlueToothCentral.writeCharNum != 0 && BlueToothCentral.characteristic == nil {
+            BlueToothCentral.characteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
+            BlueToothCentral.readCharacteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
+            BlueToothCentral.notifyCharacteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
+            
+            BlueToothCentral.readServiceNum = BlueToothCentral.writeServiceNum
+            BlueToothCentral.readCharNum = BlueToothCentral.writeCharNum
+            BlueToothCentral.notifyServiceNum = BlueToothCentral.writeServiceNum
+            BlueToothCentral.notifyCharNum = BlueToothCentral.writeCharNum
+            
             DispatchQueue.main.async {
-                self.receiveBtn.isEnabled = true
-                self.receiveBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
-            }
-        } else {
-            print("cannot read")
-            DispatchQueue.main.async {
-                self.receiveBtn.isEnabled = false
-                self.receiveBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
-            }
-        }
-        
-        
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
-            BlueToothCentral.peripheral.setNotifyValue(true, for: BlueToothCentral.characteristic)
-            if propertyStr != "" {
-                self.propertyStr += "\nNotify"
-            } else {
-                self.propertyStr += "Notify"
-            }
-        } else {
-            print("cannot notify")
-        }
-        
-        
-        self.writeType = nil
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.write.rawValue) != 0 {
-            self.writeType = CBCharacteristicWriteType.withResponse
-            if propertyStr != "" {
-                self.propertyStr += "\nWriteWithResponse"
-            } else {
-                self.propertyStr += "WriteWithResponse"
-            }
-        } else {
-            print("cannot writeWithResponse")
-        }
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.writeWithoutResponse.rawValue) != 0 {
-            self.writeType = CBCharacteristicWriteType.withoutResponse
-            if propertyStr != "" {
-                self.propertyStr += "\nWriteWithoutResponse"
-            } else {
-                self.propertyStr += "WriteWithoutResponse"
-            }
-        } else {
-            print("cannot writeWithoutResponse")
-        }
-        DispatchQueue.main.async {
-            //如果不能发送，那么把发送按钮变灰
-            if self.writeType == nil {
-                self.senBtn.isEnabled = false
-                self.senBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
-            } else {
-                self.senBtn.isEnabled = true
-                self.senBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
+                self.correctBtn()
             }
         }
     }
+    
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
 //        print("Updated")
         if let error = error {
@@ -568,8 +565,11 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             }
             
             
-            if (showRTThread) {
+            if showRTThread {
                 //它不是一次性要的全部发完的，所以我此处不加换行，而且我下面输入的时候f打了换行也是换行的，所以此处也全部不加了直接
+                if rtthreadSendStr != "" {
+                    receiveStr += "\(values)\n"
+                }
                 receiveStr += "\(values)"
                 rtthreadStr = receiveStr
             } else {
@@ -592,7 +592,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 //MARK: - TextField and Gesture Delegate
 extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITextViewDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        return false
+        return true
     }
     func textViewDidEndEditing(_ textView: UITextView) {
         if textView.tag == 111 {
@@ -601,23 +601,85 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
             
         }
     }
+    func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
+        if textView.tag == 111 {
+            self.shouldCheck = true
+        }
+        
+        return true
+    }
     //下面是实时监测输入的数字来实现return按键，因为它不像UITextField有shouldreturn代理。
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
         if textView.tag == 111 {
             if text == "\n" {
                 textView.resignFirstResponder()
+                if textView.text == "ConEmu Here" || textView.text == "CONEMU HERE" || textView.text == "conemu here" || textView.text == "shell" || textView.text == "SHELL" {
+                    self.shouldCheck = false
+                    self.showRTThread = true
+                    
+                    UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                        self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                        self.receiveTextView.alpha = 0
+                        self.navigationController?.navigationBar.alpha = 0
+                        self.tabBarController?.tabBar.alpha = 0
+                    })
+                    
+                    UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                        self.rtthreadVisualBackground.transform = .identity
+                        self.rtthreadVisualBackground.alpha = 1
+                    })  { (_) in
+                        self.rtthreadTextView.becomeFirstResponder()
+                    }
+                } else if textView.text == "edit" || textView.text == "EDIT" || textView.text == "choose" || textView.text == "CHOOSE"{
+                    self.shouldCheck = false
+                    self.performSegue(withIdentifier: "goToChoose", sender: nil)
+                } else if textView.text == "connect" || textView.text == "CONNECT" {
+                    self.shouldCheck = false
+                    guard BlueToothCentral.isBlueOn && BlueToothCentral.peripheral == nil else { return false }
+
+                    let scanTableController = storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
+                    self.navigationController?.pushViewController(scanTableController, animated: true)
+                    connectBtn.isHidden = true
+                } else if textView.text == "disconnect" || textView.text == "DISCONNECT" {
+                    self.shouldCheck = false
+                    guard BlueToothCentral.peripheral != nil else { return false }
+                    BlueToothCentral.centralManager.cancelPeripheralConnection(BlueToothCentral.peripheral)
+                } else if textView.text == "ascii" || textView.text == "ASCII" {
+                    self.shouldCheck = false
+                    receiveType.changeReceive(type: .ASCII)
+                } else if textView.text == "hexadecimal" || textView.text == "HEXADECIMAL" {
+                    self.shouldCheck = false
+                    receiveType.changeReceive(type: .Hexadecimal)
+                } else if textView.text == "decimal" || textView.text == "DECIMAL" {
+                    self.shouldCheck = false
+                    receiveType.changeReceive(type: .Decimal)
+                } else if textView.text == "clear" || textView.text == "CLEAR" {
+                    self.shouldCheck = false
+                    self.receiveStr = ""
+                }
+                
                 return false
             }
         } else if textView.tag == 222 {
-//            self.rtthreadTextView.text = self.rtthreadStr
+//            print(text.debugDescription)
+//            print(rtthreadSendStr)
             if text == "\t" {
                 rtthreadSendStr += text
-                BlueToothCentral.peripheral.writeValue(rtthreadSendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: .withoutResponse)
-                rtthreadSendStr = ""
-                return false
+                
+                if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                    BlueToothCentral.peripheral.writeValue(rtthreadSendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
+                    rtthreadSendStr = ""
+                    return false
+                } else {
+                    rtthreadSendStr += text
+                }
             } else if text == "\n" {
+                var tempSendStr = rtthreadSendStr
+                var tempSendStr2 = rtthreadSendStr
                 if rtthreadSendStr == "back" {
                     rtthreadTextView.resignFirstResponder()
+                    
+                    self.showRTThread = false
                     
                     UIView.animate(withDuration: 0.3, animations: { [unowned self] in
                         self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
@@ -632,12 +694,92 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                         }, completion: nil)
                     
                     rtthreadSendStr = ""
+                    
+                    self.receiveStr += "back\n"
+                    self.rtthreadStr = self.receiveStr
+                    return false
+                } else if rtthreadSendStr == "edit" || rtthreadSendStr == "EDIT" || rtthreadSendStr == "choose" || rtthreadSendStr == "CHOOSE"{
+                    self.performSegue(withIdentifier: "goToChoose", sender: nil)
+                    
+                    self.receiveStr += "\(rtthreadSendStr)\n"
+                    self.rtthreadStr = self.receiveStr
+                    rtthreadSendStr = ""
+                    return false
+                } else if rtthreadSendStr == "ascii" || rtthreadSendStr == "ASCII" {
+                    receiveType.changeReceive(type: .ASCII)
+                    receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
+                    
+                    self.receiveStr += "\(rtthreadSendStr)\n"
+                    self.rtthreadStr = self.receiveStr
+                    rtthreadSendStr = ""
+                    return false
+                } else if rtthreadSendStr == "hexadecimal" || rtthreadSendStr == "HEXADECIMAL" {
+                    receiveType.changeReceive(type: .Hexadecimal)
+                    receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
+                    
+                    self.receiveStr += "\(rtthreadSendStr)\n"
+                    self.rtthreadStr = self.receiveStr
+                    rtthreadSendStr = ""
+                    return false
+                } else if rtthreadSendStr == "decimal" || rtthreadSendStr == "DECIMAL" {
+                    receiveType.changeReceive(type: .Decimal)
+                    receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
+                    
+                    self.receiveStr += "\(rtthreadSendStr)\n"
+                    self.rtthreadStr = self.receiveStr
+                    rtthreadSendStr = ""
+                    return false
+                } else if rtthreadSendStr == "clear" || rtthreadSendStr == "CLEAR" {
+                    self.receiveStr = ""
+                    self.rtthreadStr = self.receiveStr
+                    rtthreadSendStr = ""
+                    return false
+                } else if rtthreadSendStr == "connect" || rtthreadSendStr == "CONNECT" {
+                    guard BlueToothCentral.isBlueOn && BlueToothCentral.peripheral == nil else { return true }
+                    
+                    let scanTableController = storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
+                    self.navigationController?.pushViewController(scanTableController, animated: true)
+                    connectBtn.isHidden = true
+                    
+                    self.receiveStr += "\(rtthreadSendStr)\n"
+                    self.rtthreadStr = self.receiveStr
+                    rtthreadSendStr = ""
+                    return false
+                } else if rtthreadSendStr == "disconnect" || rtthreadSendStr == "DISCONNECT" {
+                    guard BlueToothCentral.peripheral != nil else { return false }
+                    BlueToothCentral.centralManager.cancelPeripheralConnection(BlueToothCentral.peripheral)
+                    
+                    self.receiveStr += "\(rtthreadSendStr)\n"
+                    self.rtthreadStr = self.receiveStr
+                    rtthreadSendStr = ""
+                    return false
+                } else if tempSendStr.popLast() == "p" && tempSendStr.popLast() == "m" && tempSendStr.popLast() == "e" && tempSendStr.popLast() == "t" && tempSendStr.popLast() == "r" && tempSendStr.popLast() == "a" && tempSendStr.popLast() == "e" && tempSendStr.popLast() == "l" && tempSendStr.popLast() == "c" {
+                    self.receiveStr += ""
+                    self.rtthreadStr = self.receiveStr
+                    
+                    rtthreadSendStr = ""
+                    return false
+                } else if tempSendStr2.popLast() == "n" && tempSendStr2.popLast() == "i" && tempSendStr2.popLast() == "a" && tempSendStr2.popLast() == "m" && tempSendStr2.popLast() == "e" && tempSendStr2.popLast() == "r" {
+                    self.receiveStr += "\(rtthreadSendStr)\n"
+                    self.rtthreadStr = self.receiveStr
+                    
+                    rtthreadSendStr = ""
                     return false
                 }
+//                else if rtthreadSendStr == "ctrl+c" { //🤦‍♂️，这个方法里监听不到ctrl+c这种啊？？
+//                    BlueToothCentral.peripheral.writeValue(Data([0x03]), for: BlueToothCentral.characteristic, type: .withoutResponse)
+                    //好吧，这个ctrl+c是在comnue here 的env里面qemu后退出模拟程序用的，我有点搞混了,本来还在compents的finish文件夹的shell.c里面找到怎么接受这个ctrl+c的，结果找到了回车tab等等，才反应过来🤦‍♂️。
+//                }
                 
                 rtthreadSendStr += text
-                BlueToothCentral.peripheral.writeValue(rtthreadSendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: .withoutResponse)
-                rtthreadSendStr = ""
+                if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                    BlueToothCentral.peripheral.writeValue(rtthreadSendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
+                    rtthreadSendStr = ""
+                } else {
+//                    self.receiveStr += text
+//                    self.rtthreadStr = self.receiveStr
+//                   return false //就是发给rtthread后，我发送的什么数据他也会返回的，所以等我不需要自己手动在self.receiveStr加（会receive到的），但是如果发送是发送不出去的，就是单单我自己在这里面打字而已了，那么，我是要自己手动给self.receiveStr加上去的。
+                }
             } else if text == "" {  //这里面删除按钮就是啥都没有的输入，而不是退格键\b 🤦‍♂️,我发送tabj按键"\t"后tab键前面有多少个值，它就会给我多少个"\b"这个退格键。
                 if rtthreadSendStr.count >= 1 {
                     rtthreadSendStr.removeLast()
@@ -647,7 +789,15 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                     return false
                 }
             } else {
-                rtthreadSendStr += text
+                if BlueToothCentral.peripheral != nil, let _ = self.writeType {
+                    rtthreadSendStr += text
+                } else {
+                    //就是这些根本不是发送出去的都要存一下，本来这些如果是发出去的话，ertthread会发回来的，所以不用存。
+                    rtthreadSendStr += text
+//                    self.receiveStr += text
+//                    self.rtthreadStr = self.receiveStr
+//                    return false
+                }
             }
             
 //            print(text.debugDescription)
@@ -656,8 +806,10 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
         
         return true
         //true if the old text should be replaced by the new text; false if the replacement operation should be aborted.这个return还是蛮重要的，如果我这个是truem，那么这个方法执行完后，text的h值还是要在textview显示的。
-        //return false就是我这个函数执行完后，这个text不会显示了。
+        //return false就是我这个函数执行完后，这个text这个字符不会显示了。
     }
+    
+    
     
     func textViewDidChange(_ textView: UITextView) {
         
@@ -696,6 +848,8 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                 self.receiveBigTextView.alpha = 1
             }, completion: nil)
         } else {
+            self.receiveTextView.text = self.receiveStr
+            
             UIView.animate(withDuration: 0.3, animations: { [unowned self] in
                 self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                 self.receiveBigTextView.alpha = 0
@@ -728,8 +882,16 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
             UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
                 self.rtthreadVisualBackground.transform = .identity
                 self.rtthreadVisualBackground.alpha = 1
-                }, completion: nil)
+            }) { (_) in
+                self.rtthreadTextView.becomeFirstResponder()
+            }
+   
         } else {
+            self.receiveTextView.text = self.receiveStr
+            if rtthreadSendStr != "" {
+                receiveStr += "\(rtthreadSendStr)"
+                rtthreadStr = receiveStr
+            }
             rtthreadSendStr = ""
             rtthreadTextView.resignFirstResponder()
             
@@ -1034,6 +1196,70 @@ extension ViewController {
             self.present(ac, animated: true)
         }
     }
+    
+    
+    func correctBtn() {
+        propertyStr = ""
+        if (BlueToothCentral.readCharacteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
+//            BlueToothCentral.peripheral.readValue(for: BlueToothCentral.readCharacteristic)
+            if propertyStr != "" {
+                self.propertyStr += "\n(\(BlueToothCentral.readServiceNum), \(BlueToothCentral.readCharNum)) Read"
+            } else {
+                self.propertyStr += "(\(BlueToothCentral.readServiceNum), \(BlueToothCentral.readCharNum)) Read"
+            }
+            self.receiveBtn.isEnabled = true
+            self.receiveBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
+            
+        } else {
+            print("cannot read")
+            self.receiveBtn.isEnabled = false
+            self.receiveBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
+        }
+        
+        
+        if (BlueToothCentral.notifyCharacteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
+            BlueToothCentral.peripheral.setNotifyValue(true, for: BlueToothCentral.notifyCharacteristic)
+            if propertyStr != "" {
+                self.propertyStr += "\n(\(BlueToothCentral.notifyServiceNum), \(BlueToothCentral.notifyCharNum)) Notify"
+            } else {
+                self.propertyStr += "(\(BlueToothCentral.notifyServiceNum), \(BlueToothCentral.notifyCharNum)) Notify"
+            }
+        } else {
+            print("cannot notify")
+        }
+        
+        
+        self.writeType = nil
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.writeWithoutResponse.rawValue) != 0 {
+            self.writeType = CBCharacteristicWriteType.withoutResponse
+            if propertyStr != "" {
+                self.propertyStr += "\n(\(BlueToothCentral.writeServiceNum), \(BlueToothCentral.writeCharNum)) WriteWithoutResponse"
+            } else {
+                self.propertyStr += "(\(BlueToothCentral.writeServiceNum), \(BlueToothCentral.writeCharNum)) WriteWithoutResponse"
+            }
+        } else {
+            print("cannot writeWithoutResponse")
+        }
+        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.write.rawValue) != 0 {
+            self.writeType = CBCharacteristicWriteType.withResponse
+            if propertyStr != "" {
+                self.propertyStr += "\n(\(BlueToothCentral.writeServiceNum), \(BlueToothCentral.writeCharNum)) WriteWithResponse"
+            } else {
+                self.propertyStr += "(\(BlueToothCentral.writeServiceNum), \(BlueToothCentral.writeCharNum)) WriteWithResponse"
+            }
+        } else {
+            print("cannot writeWithResponse")
+        }
+        
+        //如果不能发送，那么把发送按钮变灰
+        if self.writeType == nil {
+            self.senBtn.isEnabled = false
+            self.senBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
+        } else {
+            self.senBtn.isEnabled = true
+            self.senBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
+        }
+    }
 }
 
 
@@ -1083,4 +1309,30 @@ extension ViewController {
         
 //        self.view.addSubview(blurView)
     }
+}
+
+
+extension ViewController {
+    //segue回调方法，获取返回参数
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "goToChoose" {
+            let desVC = segue.destination as! ChooseCharViewController
+            desVC.writeType = self.writeType
+        }
+    }
+    
+    @IBAction func close(segue: UIStoryboardSegue) {
+        if segue.identifier == "closeChoose" {
+            let sourceVC = segue.source as! ChooseCharViewController
+            //这个赋值可能没什么用🤦‍♂️，因为下面的correctBtn()还会检查一遍的
+            
+            self.writeType = sourceVC.writeType
+            
+            guard BlueToothCentral.peripheral != nil else { return }
+            self.correctBtn()
+        }
+        
+        
+    }
+
 }

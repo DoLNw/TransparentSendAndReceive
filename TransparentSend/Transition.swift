@@ -20,9 +20,9 @@ class Transition: NSObject, UINavigationControllerDelegate, UIViewControllerTran
     var isPanGestureInteration = false
     
     func navigationController(_ navigationController: UINavigationController, animationControllerFor operation: UINavigationController.Operation, from fromVC: UIViewController, to toVC: UIViewController) -> UIViewControllerAnimatedTransitioning? {
-        if operation == .push {
+        if operation == .push && toVC is ScanTableViewController {
             return TransitionAnimator()
-        } else if operation == .pop {
+        } else if operation == .pop && fromVC is ScanTableViewController {
             return TransitionAnimatorBack()
         } else {
             return nil

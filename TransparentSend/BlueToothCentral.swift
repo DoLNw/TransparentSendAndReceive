@@ -23,4 +23,14 @@ class BlueToothCentral {
     static var readCharacteristic: CBCharacteristic!
     static var characteristics = [CBService: [CBCharacteristic]]()
     static var services = [CBService]()
+    
+    
+    
+    
+    static var writeServiceNum = 0
+    static var writeCharNum = 0
+    static var readServiceNum = 0
+    static var readCharNum = 0
+    static var notifyServiceNum = 0
+    static var notifyCharNum = 0
 }

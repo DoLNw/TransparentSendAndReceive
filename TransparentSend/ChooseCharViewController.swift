@@ -77,7 +77,7 @@ class ChooseCharViewController: UIViewController {
                     debugMessage += "\nnotifyCharacteristic Ok!"
                     
                     BlueToothCentral.notifyServiceNum = notifyServiceNum
-                    BlueToothCentral.notifyCharNum = notifyServiceNum
+                    BlueToothCentral.notifyCharNum = notifyCharNum
                 }
             }
         }
@@ -150,11 +150,6 @@ class ChooseCharViewController: UIViewController {
         //当转场返回时，先执行这个，然后是上面的perpare，然后就是上一个controller的@IBAction func close(segue: UIStoryboardSegue) 。方法
         return true
     }
-    
-
-
-
-
 }
 
 extension ChooseCharViewController: UITextFieldDelegate {

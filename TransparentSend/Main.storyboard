@@ -288,19 +288,32 @@
                                     <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
-                                        <textView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" tag="222" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Zco-UU-Wuc">
-                                            <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                                        <textView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" indicatorStyle="white" keyboardDismissMode="onDrag" editable="NO" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Zco-UU-Wuc">
+                                            <rect key="frame" x="0.0" y="0.0" width="375" height="621"/>
                                             <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                            <color key="textColor" red="0.19303805870238089" green="0.96897417306900024" blue="0.1579214386518096" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
-                                            <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                            <color key="textColor" red="0.193" green="0.97023166450735643" blue="0.1579214386518096" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                            <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" keyboardAppearance="alert" smartDashesType="no" smartInsertDeleteType="no" smartQuotesType="no"/>
+                                        </textView>
+                                        <textView clipsSubviews="YES" multipleTouchEnabled="YES" tag="222" contentMode="scaleToFill" text="uyj" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="dPy-z1-Z3R">
+                                            <rect key="frame" x="0.0" y="621" width="375" height="46"/>
+                                            <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <constraints>
+                                                <constraint firstAttribute="height" constant="46" id="KtQ-ac-aog"/>
+                                            </constraints>
+                                            <color key="textColor" red="0.193" green="0.96999999999999997" blue="0.158" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                             <textInputTraits key="textInputTraits" autocorrectionType="no" spellCheckingType="no" keyboardAppearance="alert" smartDashesType="no" smartInsertDeleteType="no" smartQuotesType="no"/>
                                         </textView>
                                     </subviews>
                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                     <constraints>
+                                        <constraint firstItem="dPy-z1-Z3R" firstAttribute="leading" secondItem="wNh-XJ-DOa" secondAttribute="leading" id="6ft-Yq-A2v"/>
+                                        <constraint firstItem="dPy-z1-Z3R" firstAttribute="top" secondItem="Zco-UU-Wuc" secondAttribute="bottom" id="C7O-ch-9t4"/>
                                         <constraint firstItem="Zco-UU-Wuc" firstAttribute="top" secondItem="wNh-XJ-DOa" secondAttribute="top" id="RFV-xx-hOq"/>
-                                        <constraint firstAttribute="bottom" secondItem="Zco-UU-Wuc" secondAttribute="bottom" id="ZCf-gk-cuw"/>
+                                        <constraint firstAttribute="trailing" secondItem="dPy-z1-Z3R" secondAttribute="trailing" id="dxN-fh-BHu"/>
                                         <constraint firstItem="Zco-UU-Wuc" firstAttribute="leading" secondItem="wNh-XJ-DOa" secondAttribute="leading" id="mP8-6U-76s"/>
+                                        <constraint firstAttribute="bottom" secondItem="dPy-z1-Z3R" secondAttribute="bottom" id="mXP-Ds-xq5"/>
                                         <constraint firstAttribute="trailing" secondItem="Zco-UU-Wuc" secondAttribute="trailing" id="prf-jh-0tg"/>
                                     </constraints>
                                 </view>
@@ -371,6 +384,7 @@
                         <outlet property="receiveCleraBtn" destination="4wD-sI-VMv" id="LXt-tz-gDC"/>
                         <outlet property="receiveTextView" destination="5lD-r0-ZW7" id="Lnm-yf-1Zp"/>
                         <outlet property="receiveTypeBtn" destination="iAj-Wg-UGh" id="RwI-LT-stT"/>
+                        <outlet property="rtthreadSendTextView" destination="dPy-z1-Z3R" id="jFJ-6w-Wed"/>
                         <outlet property="rtthreadTextView" destination="Zco-UU-Wuc" id="son-cR-IEl"/>
                         <outlet property="rtthreadVisualBackground" destination="yca-EQ-IhG" id="iyS-z6-T8r"/>
                         <outlet property="senBtn" destination="eeT-85-Dav" id="BPg-Ue-5rm"/>

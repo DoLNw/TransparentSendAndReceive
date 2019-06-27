@@ -20,13 +20,10 @@ enum SendAndReceiveType: String {
         switch self {
         case .Decimal:
             self = .Hexadecimal
-            print("1111")
         case .Hexadecimal:
             self = .ASCII
-            print("222")
         case .ASCII:
             self = .Decimal
-            print("333")
         }
     }
     
@@ -36,14 +33,84 @@ enum SendAndReceiveType: String {
 }
 
 class ViewController: UIViewController {
+    @IBOutlet weak var rtthreadSendTextView: UITextView!
     @IBOutlet weak var rtthreadVisualBackground: UIVisualEffectView!
     @IBOutlet weak var rtthreadTextView: UITextView!
     var showRTThread = false
+    //以下是给富文本使用的，但是发现运行的比较慢了，而且突然一个字就没有l颜色了，但是复制后到别的地方还是看得到的，比如msh />的>,还有4.0.2的0等等，还每次都是固定的几个， 看起来有蹊跷，所以不打算使用了
+    //比如\u{1B}[32m   ciewrovhji  \u{1B}[0m 之间的都换一种颜色等等
+    //\u{1B}[32m 它网络ping成功的话32m，但是不成功的话31m,所以颜色不同的话，可以知道成功失败🤦‍♂️
+//    var rtthreadAttrStr = NSMutableAttributedString(string: "")
+//    var matchesCount = 0 {
+//        didSet {
+//            if self.matchesCount > 1000 {
+//                self.matchesCount = 0
+//            }
+//        }
+//    }
+//    var rtthreadAppendStr = "" {
+//        didSet {
+//            DispatchQueue.main.sync { [unowned self] in
+//                print(rtthreadAppendStr)
+//                let rangeDefault = self.rtthreadTextView.selectedRange
+//                let attrAppendStr = NSMutableAttributedString(string: self.rtthreadAppendStr)
+//
+//                attrAppendStr.addAttributes([NSAttributedString.Key.foregroundColor: UIColor(displayP3Red: 0.193, green: 0.970, blue: 0.158, alpha: 1), NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)], range: NSRange(location: 0, length: self.rtthreadAppendStr.count))
+//
+//                //https://www.runoob.com/regexp/regexp-syntax.html
+//                let pattern = #"(\\u\{27\}\[32m(.*?)\\u\{27\}\[0m)|(\\u\{27\}\[32m(.*?).*)|(.*(.*?)\\u\{27\}\[0m)"#
+//                //                    let pattern = #"\\u\{27\}\[32m(.*?)\\u\{27\}\[0m"#
+//                do {
+//                    let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+//                    let matches = regex.matches(in: self.rtthreadAppendStr, options: [], range: NSMakeRange(0, self.rtthreadAppendStr.count))
+////                    print(matches.count)
+//
+//                    for result in matches.reversed() {
+//                        matchesCount += 1
+//
+//                        print(matchesCount)
+//                        let range = result.range(at: 0)
+//                        let subStr = attrAppendStr.attributedSubstring(from: NSRange(location: range.location, length: range.length))
+//
+//                        attrAppendStr.addAttribute(NSAttributedString.Key.foregroundColor, value: UIColor.blue, range: NSRange(location: range.location, length: subStr.length))
+//
+//                        if subStr.description.hasPrefix(#"\u{27}[32m"#) {
+//                            attrAppendStr.deleteCharacters(in: NSRange(location: range.location, length: 10))
+//                        }
+////                        if subStr.description.hasSuffix(#"\u{27}[0m"#) {
+//                        else if subStr.description.contains("\\") {
+//                            attrAppendStr.deleteCharacters(in: NSRange(location: range.location+subStr.length-10, length: 10))
+//                        }
+//                    }
+//                    //                    attrStr.addAttribute(NSAttributedString.Key.font, value: self.rtthreadTextView.font, range: NSRange(location: 0, length: receiveStr.count))
+//
+//                    //一段段发送，可能这一段正好分隔符都没有，需要用它判断。
+//                    if matchesCount % 2 != 0 && matches.count == 0 {
+//                        attrAppendStr.addAttribute(NSAttributedString.Key.foregroundColor, value: UIColor.blue, range: NSRange(location: 0, length: rtthreadAppendStr.count))
+//                    }
+//                    self.rtthreadAttrStr.append(attrAppendStr)
+//                    self.rtthreadStr = self.receiveStr
+//                    self.rtthreadTextView.attributedText = self.rtthreadAttrStr
+//
+//                    let rangeNow = NSRange(location: rangeDefault.location + attrAppendStr.length, length: 0)
+//                    self.rtthreadTextView.selectedRange = rangeNow
+//                } catch {
+//                    print(error)
+//                    print("error")
+////                    self.rtthreadTextView.text = self.rtthreadStr
+//                }
+//
+//            }
+//        }
+//    }
     var rtthreadStr = "" {
         didSet {
             DispatchQueue.main.async { [unowned self] in
                 self.rtthreadTextView.text = self.rtthreadStr
-                self.rtthreadTextView.scrollRangeToVisible(NSRange(location:self.rtthreadTextView.text.lengthOfBytes(using: .utf8)+300, length: 1))
+                if self.showRTThread {
+                    self.rtthreadTextView.scrollRangeToVisible(NSRange(location:self.rtthreadTextView.text.lengthOfBytes(using: .utf8), length: 1))
+                    //                self.rtthreadTextView.selectedRange = NSRange(location: self.rtthreadStr.count, length: 0)
+                }
             }
         }
     }
@@ -163,10 +230,14 @@ class ViewController: UIViewController {
             DispatchQueue.main.async { [unowned self] in
                 if (self.showBigger) {
                     self.receiveBigTextView.text = self.receiveStr
-                    self.receiveBigTextView.scrollRangeToVisible(NSRange(location:self.receiveBigTextView.text.lengthOfBytes(using: .utf8), length: 1))
+                    if !self.showRTThread {
+                        self.receiveBigTextView.scrollRangeToVisible(NSRange(location:self.receiveBigTextView.text.lengthOfBytes(using: .utf8), length: 1))
+                    }
                 } else {
                     self.receiveTextView.text = self.receiveStr
-                    self.receiveTextView.scrollRangeToVisible(NSRange(location: self.receiveStr.lengthOfBytes(using: .utf8), length: 1))
+                    if !self.showRTThread {
+                        self.receiveTextView.scrollRangeToVisible(NSRange(location: self.receiveStr.lengthOfBytes(using: .utf8), length: 1))
+                    }
                 }
             }
         }
@@ -206,8 +277,10 @@ class ViewController: UIViewController {
         self.view.addGestureRecognizer(tapGesture)
         
         self.sendTextView.delegate = self
-        self.rtthreadTextView.delegate = self
-//        NotificationCenter.default.addObserver(self, selector: <#T##Selector#>, name:UIKEy, object: nil)
+//        self.rtthreadTextView.delegate = self
+        self.rtthreadSendTextView.delegate = self
+//        NotificationCenter.default.addObserver(self, selector: , name:UIKEy, object: nil)
+//        self.rtthreadTextView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 200, right: 0)
         
         self.sendTextView.layer.cornerRadius = 3.5
         self.sendTextView.clipsToBounds = true
@@ -230,7 +303,11 @@ class ViewController: UIViewController {
         let doubleTapGesture4 = UITapGestureRecognizer(target: self, action: #selector(doubleDoubleTapAct(_:)))
         doubleTapGesture4.numberOfTapsRequired = 2
         self.rtthreadTextView.addGestureRecognizer(doubleTapGesture4)
+        
+        //below are some tests aboue escape character \e
+//        sendTextView.text = "\u{1B}[32m fjewf vjweifucj \u{27}[0m wechewuivhc\u{53} \u{54}j weiov j \n"
     }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         //就是如果加了这句的话，如果本来连接上了之后还没有拿到character的时候就到这一步了，那么就有问题了呀！但是转场取消直接没按扭了，所以使用再下面一句
@@ -553,14 +630,49 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                         }
                     }
                 }
-                if dataInt.last == "\n" {
-                    dataInt.removeLast()
-                    if dataInt.last == "\r" {
-                        dataInt.removeLast()
-                    }
-                }
+//                if !showRTThread {
+//                    if dataInt.last == "\n" {
+//                        dataInt.removeLast()
+//                        if dataInt.last == "\r" {
+//                            dataInt.removeLast()
+//                        }
+//                    }
+//                }
 //                values = dataInt.joined(separator: " ")
                 values = dataInt.joined(separator: "")
+                
+//                print(values.debugDescription)
+//                if showRTThread {
+                    while values.contains(#"\u{27}"#) {
+                        if let index = values.firstIndex(of: "\\") {
+                            for _ in 0..<9 {
+                                values.remove(at: index)
+                            }
+                            
+                            //这两种方法不是太好，纯粹是根据我我得到的字符串所以能这么写，否则会有漏网之鱼的。
+                            //上面只能写0～8，去除9个，因为最后的那个消除c转义只有9个，写10会溢出
+                            if let firstIndex = values.firstIndex(of: "m"), firstIndex == index {
+                                values.remove(at: index)
+                            }
+                            if let firstIndex = values.lastIndex(of: "m"), firstIndex == index {
+                                values.remove(at: index)
+                            }
+                        }
+                    }
+//                }
+
+//                    if values.hasPrefix(#"\u{27}[32m"#) {
+//                        for _ in 0..<10 {
+//                            values.removeFirst()
+//                        }
+//                    }
+//                    if values.hasSuffix(#"\u{27}[0m\n"#) {
+//                        for _ in 0..<11 {
+//                            values.removeLast()
+//                        }
+//                        values.append("\n")
+//                    }
+//                }
 //                print("Hexadecimal receive: " + values)
             }
             
@@ -569,11 +681,14 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                 //它不是一次性要的全部发完的，所以我此处不加换行，而且我下面输入的时候f打了换行也是换行的，所以此处也全部不加了直接
                 if rtthreadSendStr != "" {
                     receiveStr += "\(values)\n"
+                    rtthreadStr = receiveStr
                 }
+                
                 receiveStr += "\(values)"
                 rtthreadStr = receiveStr
+                
             } else {
-                receiveStr += "\(values)\n"
+                receiveStr += "\(values)"
             }
         }
     }
@@ -661,8 +776,6 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                 return false
             }
         } else if textView.tag == 222 {
-//            print(text.debugDescription)
-//            print(rtthreadSendStr)
             if text == "\t" {
                 rtthreadSendStr += text
                 
@@ -785,6 +898,7 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                     rtthreadSendStr.removeLast()
                 } else {
                     //理论上发送的已经没什么好删除的了，但是它显示的时候还是会删减掉的，我直接显示回来，等于没删除。
+//                    self.rtthreadTextView.text = self.rtthreadStr
                     self.rtthreadTextView.text = self.rtthreadStr
                     return false
                 }
@@ -792,7 +906,7 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                 if BlueToothCentral.peripheral != nil, let _ = self.writeType {
                     rtthreadSendStr += text
                 } else {
-                    //就是这些根本不是发送出去的都要存一下，本来这些如果是发出去的话，ertthread会发回来的，所以不用存。
+                    //就是这些根本不是发送出去的都要存一下，本来这些如果是发出去的话，rtthread会发回来的，所以不用存。
                     rtthreadSendStr += text
 //                    self.receiveStr += text
 //                    self.rtthreadStr = self.receiveStr
@@ -883,7 +997,7 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                 self.rtthreadVisualBackground.transform = .identity
                 self.rtthreadVisualBackground.alpha = 1
             }) { (_) in
-                self.rtthreadTextView.becomeFirstResponder()
+                self.rtthreadSendTextView.becomeFirstResponder()
             }
    
         } else {

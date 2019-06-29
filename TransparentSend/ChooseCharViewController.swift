@@ -28,6 +28,17 @@ class ChooseCharViewController: UIViewController {
         }
         
         var debugMessage = ""
+        var newChange = 0
+        if writeService.text != "" || writeChar.text != "" {
+            newChange += 1
+        }
+        if readService.text != "" || readChar.text != "" {
+            newChange += 1
+        }
+        if notifyService.text != "" || notifyChar.text != "" {
+            newChange += 1
+        }
+        var allConfirmed = 0
         
         if let writeServiceText = writeService.text, let writeCharText = writeChar.text, let writeServiceNum = Int(writeServiceText), let writeCharNum = Int(writeCharText) {
             if BlueToothCentral.services.count >= writeServiceNum && writeServiceNum >= 0 {
@@ -41,6 +52,8 @@ class ChooseCharViewController: UIViewController {
                         
                         BlueToothCentral.writeServiceNum = writeServiceNum
                         BlueToothCentral.writeCharNum = writeCharNum
+                        
+                        allConfirmed += 1
                     } else if (BlueToothCentral.characteristics[service]![writeCharNum-1].properties.rawValue & CBCharacteristicProperties.writeWithoutResponse.rawValue) != 0 {
                         self.writeType = .withoutResponse
                         BlueToothCentral.characteristic = BlueToothCentral.characteristics[service]![writeCharNum-1]
@@ -48,6 +61,8 @@ class ChooseCharViewController: UIViewController {
                         
                         BlueToothCentral.writeServiceNum = writeServiceNum
                         BlueToothCentral.writeCharNum = writeCharNum
+                        
+                        allConfirmed += 1
                     }
                 }
             }
@@ -63,9 +78,12 @@ class ChooseCharViewController: UIViewController {
                     
                     BlueToothCentral.readServiceNum = readServiceNum
                     BlueToothCentral.readCharNum = readCharNum
+                    
+                    allConfirmed += 1
                 }
             }
         }
+        
         if let notifyServiceText = notifyService.text, let notifyCharText = notifyChar.text, let notifyServiceNum = Int(notifyServiceText), let notifyCharNum = Int(notifyCharText) {
             if BlueToothCentral.services.count >= notifyServiceNum && notifyServiceNum >= 0 {
                 let service = BlueToothCentral.services[notifyServiceNum-1]
@@ -78,6 +96,8 @@ class ChooseCharViewController: UIViewController {
                     
                     BlueToothCentral.notifyServiceNum = notifyServiceNum
                     BlueToothCentral.notifyCharNum = notifyCharNum
+                    
+                    allConfirmed += 1
                 }
             }
         }
@@ -89,10 +109,12 @@ class ChooseCharViewController: UIViewController {
         notifyService.resignFirstResponder()
         notifyChar.resignFirstResponder()
         
-        showErrorAlertWithTitle("选择通知", message: debugMessage)
-        if debugMessage != "" {
+        if allConfirmed == newChange {
             self.performSegue(withIdentifier: "closeChoose", sender: nil)
+        } else {
+            showErrorAlertWithTitle("选择通知", message: debugMessage)
         }
+
     }
     
     @IBOutlet weak var writeService: UITextField!

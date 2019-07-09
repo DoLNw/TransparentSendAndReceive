@@ -95,6 +95,7 @@ class ScanTableViewController: UITableViewController {
         }
 //        }
     }
+    
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         BlueToothCentral.centralManager.stopScan()
@@ -106,6 +107,7 @@ class ScanTableViewController: UITableViewController {
         guard let timer = self.timer else { return }
         timer.invalidate()
     }
+    
     @objc func timerFired () {
 //        self.view.frame = CGRect(x: 0, y: 367, width: 375, height: 400)
 //        print("2")
@@ -169,7 +171,7 @@ class ScanTableViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
+//        tableView.deselectRow(at: indexPath, animated: true)
         guard self.peripherales[indexPath.row] != "Unknown" else { return }
         BlueToothCentral.centralManager.connect(self.peripheralIDes[indexPath.row], options: nil)
     }
@@ -177,4 +179,49 @@ class ScanTableViewController: UITableViewController {
         NotificationCenter.default.removeObserver(self)
     }
     
+}
+
+
+extension ScanTableViewController {
+    override var canBecomeFirstResponder: Bool {
+        return true
+    }
+    
+    override var keyCommands: [UIKeyCommand]? {
+        return [UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "close"), UIKeyCommand(input: "1", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 1"), UIKeyCommand(input: "!", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 2"), UIKeyCommand(input: "!", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 2"), UIKeyCommand(input: "3", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 3"), UIKeyCommand(input: "4", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 4"), UIKeyCommand(input: "5", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 5")]
+    }
+    
+    @objc func keyCommands(sender: UIKeyCommand) {
+        switch sender.input {
+        case "w":
+            self.navigationController?.popViewController(animated: true)
+        case "1":
+            if self.peripheralIDes.count >= 1 {
+                self.tableView.selectRow(at: IndexPath(row:0, section: 0), animated: true, scrollPosition: .none)
+                BlueToothCentral.centralManager.connect(self.peripheralIDes[0], options: nil)
+            }
+        case "2":
+            if self.peripheralIDes.count >= 2 {
+                self.tableView.selectRow(at: IndexPath(row: 1, section: 0), animated: true, scrollPosition: .none)
+                BlueToothCentral.centralManager.connect(self.peripheralIDes[1], options: nil)
+            }
+        case "3":
+            if self.peripheralIDes.count >= 3 {
+                self.tableView.selectRow(at: IndexPath(row: 2, section: 0), animated: true, scrollPosition: .none)
+                BlueToothCentral.centralManager.connect(self.peripheralIDes[2], options: nil)
+            }
+        case "4":
+            if self.peripheralIDes.count >= 4 {
+                self.tableView.selectRow(at: IndexPath(row: 3, section: 0), animated: true, scrollPosition: .none)
+                BlueToothCentral.centralManager.connect(self.peripheralIDes[3], options: nil)
+            }
+        case "5":
+            if self.peripheralIDes.count >= 5 {
+                self.tableView.selectRow(at: IndexPath(row: 4, section: 0), animated: true, scrollPosition: .none)
+                BlueToothCentral.centralManager.connect(self.peripheralIDes[4], options: nil)
+            }
+        default:
+            break
+        }
+    }
 }

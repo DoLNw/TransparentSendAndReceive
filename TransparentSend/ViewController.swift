@@ -61,6 +61,7 @@ enum ShowType: String {
 class ViewController: UIViewController {
     var showType: ShowType = .normal
     
+    @IBOutlet weak var rtthreadmsh: UILabel!
     @IBOutlet weak var rtthreadVisualBackground: UIVisualEffectView!
     @IBOutlet weak var rtthreadTextView: UITextView!
     //由于TextField没有tab键的代理方法，按下tab键直接焦点移动的，所以只能用回TextView了
@@ -175,19 +176,19 @@ class ViewController: UIViewController {
             DispatchQueue.main.async { [unowned self] in
                 switch self.showType {
                 case .normal:
-                    print("normal")
+//                    print("normal")
                     self.receiveTextView.text = self.receiveStr
 //                    self.receiveBigTextView.text = ""
 //                    self.rtthreadTextView.text = ""
                     self.receiveTextView.scrollRangeToVisible(NSRange(location: self.receiveTextView.text.lengthOfBytes(using: .utf8)-1, length: 1))
                 case .bigger:
-                    print("bigger")
+//                    print("bigger")
                     self.receiveBigTextView.text = self.receiveStr
 //                    self.rtthreadTextView.text = ""
 //                    self.receiveTextView.text = ""
-                    self.receiveBigTextView.scrollRangeToVisible(NSRange(location:self.receiveBigTextView.text.lengthOfBytes(using: .utf8), length: 0))
+                    self.receiveBigTextView.scrollRangeToVisible(NSRange(location:self.receiveStr.lengthOfBytes(using: .utf8), length: 0))
                 case .rtthread:
-                    print("rtthread")
+//                    print("rtthread")
                     self.rtthreadTextView.text = self.receiveStr
 //                    self.receiveTextView.text = ""
 //                    self.receiveBigTextView.text = ""
@@ -537,7 +538,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             //所以这里最后要加一句这个呀，本来没加
             valueStrs.append(String(valueStr[firstIndex...secondindex]))
             
-//            print(valueStrs)
+//            print("update: \(valueStrs)")
             
             var values = ""
             //收到的是16进制的String表示
@@ -580,6 +581,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 
                 
                 values = dataInt.joined(separator: "")
+//                print(values.debugDescription)
                 
                 //q去掉转义的颜色等等
                 if self.showType == .rtthread {
@@ -608,7 +610,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                     
                     isTabReceiveTemp = false
                 } else if isTabReceive {
-                    print(values.debugDescription)
+//                    print(values.debugDescription)
                     if values.contains("/>") {
                         tabTempStr = values
                         while tabTempStr.contains("/>") {
@@ -637,7 +639,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        print("write to peripheral withresponse")
+//        print("write to peripheral withresponse")
     }
     
 }
@@ -645,8 +647,20 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 
 //MARK: - TextView and Gesture Delegate
 extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITextViewDelegate {
+//    override func viewWillDisappear(_ animated: Bool) {
+//        super.viewWillDisappear(animated)
+//
+//        if self.showType == .rtthread {
+//            if self.rtthreadSendTextView.isFirstResponder {
+//                print("1111")
+//                self.view.endEditing(true)
+//                self.view.transform = CGAffineTransform.identity
+//            }
+//        }
+//    }
     
-    @objc func willShow(notification:NSNotification) {
+    
+    @objc func willShow(notification: NSNotification) {
         if self.rtthreadSendTextView.isFirstResponder {
             let textMaxY = self.rtthreadSendTextView.frame.maxY // 取到输入框的最大的y坐标值
             
@@ -662,18 +676,25 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
             
             UIView.animate(withDuration: duration) { () -> Void in
                 if (textMaxY > keyboardY!) {
-                    self.view.transform = CGAffineTransform(translationX: 0, y: keyboardY! - textMaxY - 10)
-                }else{
+//                    self.view.transform = CGAffineTransform(translationX: 0, y: keyboardY! - textMaxY - 10)
+                    self.rtthreadSendTextView.transform = CGAffineTransform(translationX: 0, y: keyboardY! - textMaxY)
+                    self.rtthreadTextView.transform = CGAffineTransform(translationX: 0, y: keyboardY! - textMaxY)
+                    self.rtthreadmsh.transform = CGAffineTransform(translationX: 0, y: keyboardY! - textMaxY)
+                } else {
                     //view.transform = CGAffineTransformIdentity;线性代数里面讲的矩阵变换，这个是恒等变换当 你改变过一个view.transform属性或者view.layer.transform的时候需要恢复默认状态的话，记得先把他们重置可以使用view.transform = CGAffineTransformIdentity，或者view.layer.transform = CATransform3DIdentity，
-                    self.view.transform = CGAffineTransform.identity
+                    self.rtthreadSendTextView.transform = .identity
+                    self.rtthreadTextView.transform = .identity
+                    self.rtthreadmsh.transform = .identity
                 }
             }
         }
     }
     
-    @objc func willHide(notification:NSNotification) {
+    @objc func willHide(notification: NSNotification) {
         UIView.animate(withDuration: 2.0) { () -> Void in
-            self.view.transform = CGAffineTransform.identity
+            self.rtthreadSendTextView.transform = .identity
+            self.rtthreadTextView.transform = .identity
+            self.rtthreadmsh.transform = .identity
         }
     }
     
@@ -825,8 +846,9 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                 }
                 
                 if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                    //esp8266是需要在尾部加上“\r\n”的，但是我这个rtthread自己是只要一个就好的，如果两个一起写的话，它是最后会多一个msh />的
                     let sendStr = dropFirstTabStr(sendText: sendText, tabTempStr: tabTempStr)+"\n"
-//                    print(sendStr)
+                    print(sendStr.debugDescription)
                     BlueToothCentral.peripheral.writeValue(sendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
                 }
                 
@@ -838,6 +860,7 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
             } else if text == "\t" || text == "`" || text == "~" || text == "·" {
                 if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
                     let sendStr = dropFirstTabStr(sendText: sendText, tabTempStr: tabTempStr)+"\t"
+                    print(sendStr.debugDescription)
                     BlueToothCentral.peripheral.writeValue(sendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
                 }
                 
@@ -1352,10 +1375,146 @@ extension ViewController {
 
 }
 
-extension UITextView {
-    func scrollToBottom() {
-//        let contentHeight = contentSize.height - frame.size.height
-//        let contentoffsetY = contentHeight > 0 ? contentHeight : 0
-//        setContentOffset(CGPoint(x: 0, y: contentoffsetY), animated: false)
+extension ViewController {
+    override var canBecomeFirstResponder: Bool {
+        return true
+    }
+    
+    override var keyCommands: [UIKeyCommand]? {
+        var keyCommands = [UIKeyCommand]()
+        if BlueToothCentral.peripheral == nil && BlueToothCentral.isBlueOn {
+            keyCommands.append(UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"))
+        } else {
+            keyCommands.append(UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"))
+        }
+        
+        if self.showType != .rtthread {
+            keyCommands.append(UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"))
+        }
+        if self.showType != .normal {
+            keyCommands.append(UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"))
+        }
+        if self.showType != .bigger {
+            keyCommands.append(UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"))
+        }
+        keyCommands.append(UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"))
+        
+        return [UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"), UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"), UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"), UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"), UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"), UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"), UIKeyCommand(input: "a", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "ASCII"), UIKeyCommand(input: "d", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Decimal"), UIKeyCommand(input: "h", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Hexadecimal")]
+    }
+    
+    @objc func shortcuts(sender: UIKeyCommand) {
+        switch sender.input {
+        case "c":
+            if BlueToothCentral.peripheral == nil && BlueToothCentral.isBlueOn {
+                let scanTableController = storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
+                self.navigationController?.pushViewController(scanTableController, animated: true)
+                connectBtn.isHidden = true
+            }
+        case "d":
+            if sender.modifierFlags == .alternate {
+                receiveType.changeReceive(type: .Decimal)
+                receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
+                return
+            }
+            
+            if BlueToothCentral.peripheral != nil {
+                BlueToothCentral.centralManager.cancelPeripheralConnection(BlueToothCentral.peripheral)
+            }
+
+        case "s":
+            if self.showType != .rtthread {
+                if self.sendTextView.isFirstResponder {
+                    self.sendTextView.resignFirstResponder()
+                }
+                
+                self.showType.changeShowType(type: .rtthread)
+                self.receiveStr += ""
+                
+                UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                    self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.receiveTextView.alpha = 0
+                    self.tabBarController?.tabBar.alpha = 0
+                    
+                    self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.receiveBigTextView.alpha = 0
+                })
+                
+                UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                    self.rtthreadVisualBackground.transform = .identity
+                    self.rtthreadVisualBackground.alpha = 1
+                })  { (_) in
+                    self.rtthreadSendTextView.becomeFirstResponder()
+                }
+            }
+
+        case "w":
+            if self.showType != .normal {
+                if self.rtthreadSendTextView.isFirstResponder {
+                    self.rtthreadSendTextView.resignFirstResponder()
+                }
+                
+                self.showType.changeShowType(type: .normal)
+                self.receiveStr += ""
+                
+                UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                    self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.receiveBigTextView.alpha = 0
+                    
+                    self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.rtthreadVisualBackground.alpha = 0
+                })
+                
+                UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                    self.receiveTextView.transform = .identity
+                    self.receiveTextView.alpha = 1
+                    self.tabBarController?.tabBar.alpha = 1
+                }) { (_) in
+                }
+            }
+            
+        case "b":
+            if self.showType != .bigger {
+                if self.sendTextView.isFirstResponder {
+                    self.sendTextView.resignFirstResponder()
+                }
+                if self.rtthreadSendTextView.isFirstResponder {
+                    self.rtthreadSendTextView.resignFirstResponder()
+                }
+                
+                self.showType.changeShowType(type: .bigger)
+                self.receiveStr += ""
+                
+                UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                    self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.receiveTextView.alpha = 0
+                    self.tabBarController?.tabBar.alpha = 0
+                    
+                    self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.rtthreadVisualBackground.alpha = 0
+                })
+                
+                UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                    self.receiveBigTextView.transform = .identity
+                    self.receiveBigTextView.alpha = 1
+                })
+            }
+            
+        case "e":
+            self.performSegue(withIdentifier: "goToChoose", sender: nil)
+            
+        case "a":
+            receiveType.changeReceive(type: .ASCII)
+            receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
+            
+        case "h":
+            receiveType.changeReceive(type: .Hexadecimal)
+            receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
+            
+        default:
+            break
+        }
     }
 }
+
+
+

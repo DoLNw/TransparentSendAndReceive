@@ -197,3 +197,23 @@ extension ChooseCharViewController: UITextFieldDelegate {
         return true
     }
 }
+
+extension ChooseCharViewController {
+    override var canBecomeFirstResponder: Bool {
+        return true
+    }
+    
+    override var keyCommands: [UIKeyCommand]? {
+        return [UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "close")]
+    }
+    
+    @objc func keyCommands(sender: UIKeyCommand) {
+        switch sender.input {
+        case "w":
+            self.performSegue(withIdentifier: "closeChoose", sender: nil)
+        default:
+            break
+        }
+    }
+}
+

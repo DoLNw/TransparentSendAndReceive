@@ -67,9 +67,6 @@ class ViewController: UIViewController {
     //由于TextField没有tab键的代理方法，按下tab键直接焦点移动的，所以只能用回TextView了
 //    @IBOutlet weak var rtthreadSendTextField: UITextField!
     @IBOutlet weak var rtthreadSendTextView: UITextView!
-    var tabTempStr = ""
-    var isTabReceive = true
-    var isTabReceiveTemp = false
     
     @IBOutlet weak var titleLabel: UILabel!
     @IBAction func chooseChartistic(_ sender: Any) {
@@ -565,7 +562,12 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                             if uint8 == 8 {
 //                                if self.rtthreadStr.count >= 1 {
 //                                    self.rtthreadStr.removeLast()
-                                    continue
+                                if dataInt.count > 0 {
+                                    dataInt.removeLast()
+                                } else if self.receiveStr.count > 0 {
+                                    self.receiveStr.removeLast()
+                                }
+                                 continue
 //                                }
                             }
                         }
@@ -602,32 +604,6 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                         }
                     }
                 }
-                if isTabReceiveTemp {
-                    tabTempStr += values
-                    DispatchQueue.main.async { [unowned self] in
-                        self.rtthreadSendTextView.text = self.tabTempStr
-                    }
-                    
-                    isTabReceiveTemp = false
-                } else if isTabReceive {
-//                    print(values.debugDescription)
-                    if values.contains("/>") {
-                        tabTempStr = values
-                        while tabTempStr.contains("/>") {
-                            tabTempStr.removeFirst()
-                        }
-                        tabTempStr.removeFirst()
-                        isTabReceive = false
-
-                        DispatchQueue.main.async { [unowned self] in
-                            if self.tabTempStr.count < self.rtthreadSendTextView.text.count {
-                                self.isTabReceiveTemp = true
-                            }
-                        
-                            self.rtthreadSendTextView.text = self.tabTempStr
-                        }
-                    }
-                }
                 
                 self.receiveStr += "\(values)"
             }
@@ -647,17 +623,6 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 
 //MARK: - TextView and Gesture Delegate
 extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITextViewDelegate {
-//    override func viewWillDisappear(_ animated: Bool) {
-//        super.viewWillDisappear(animated)
-//
-//        if self.showType == .rtthread {
-//            if self.rtthreadSendTextView.isFirstResponder {
-//                print("1111")
-//                self.view.endEditing(true)
-//                self.view.transform = CGAffineTransform.identity
-//            }
-//        }
-//    }
     
     
     @objc func willShow(notification: NSNotification) {
@@ -775,117 +740,31 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
                 return false
             }
         } else if textView.tag == 321 {
-            guard let sendText = self.rtthreadSendTextView.text else { return false }
-            if text == "\n" {
-                if sendText == "back" {
-                    rtthreadSendTextView.resignFirstResponder()
-                    
-                    self.showType.changeShowType(type: .normal)
-                    self.receiveStr += ""
-                    
-                    UIView.animate(withDuration: 0.3, animations: { [unowned self] in
-                        self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
-                        self.rtthreadVisualBackground.alpha = 0
-                    })
-                    
-                    UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
-                        self.receiveTextView.transform = .identity
-                        self.receiveTextView.alpha = 1
-//                        self.navigationController?.navigationBar.alpha = 1
-                        self.tabBarController?.tabBar.alpha = 1
-                    })  { (_) in
-//                        self.receiveStr += ""
-                    }
-                    
-                    self.receiveStr += "\(sendText)\n"
-                } else if sendText == "edit" || sendText == "EDIT" || sendText == "choose" || sendText == "CHOOSE"{
-                    self.performSegue(withIdentifier: "goToChoose", sender: nil)
-                    
-                    self.receiveStr += "\(sendText)\n"
-                } else if sendText == "ascii" || sendText == "ASCII" {
-                    receiveType.changeReceive(type: .ASCII)
-                    receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
-                    
-                    self.receiveStr += "\(sendText)\n"
-                } else if sendText == "hexadecimal" || sendText == "HEXADECIMAL" {
-                    receiveType.changeReceive(type: .Hexadecimal)
-                    receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
-                    
-                    self.receiveStr += "\(sendText)\n"
-                } else if sendText == "decimal" || sendText == "DECIMAL" {
-                    receiveType.changeReceive(type: .Decimal)
-                    receiveTypeBtn.setTitle(receiveType.rawValue, for: .normal)
-                    
-                    self.receiveStr += "\(sendText)\n"
-                } else if sendText == "clear" || sendText == "CLEAR" {
-                    self.receiveStr = ""
-                    self.rtthreadSendTextView.text = ""
-                    return false
-                } else if sendText == "connect" || sendText == "CONNECT" {
-                    guard BlueToothCentral.isBlueOn && BlueToothCentral.peripheral == nil else {
-                        self.receiveStr += "not support now\n"
-                        self.rtthreadSendTextView.text = ""
-                        return false
-                    }
-                    
-                    let scanTableController = storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
-                    self.navigationController?.pushViewController(scanTableController, animated: true)
-                    connectBtn.isHidden = true
-                    
-                    self.receiveStr += "\(sendText)\n"
-                } else if sendText == "disconnect" || sendText == "DISCONNECT" {
-                    guard BlueToothCentral.peripheral != nil else {
-                        self.receiveStr += "not support now\n"
-                        self.rtthreadSendTextView.text = ""
-                        return false
-                    }
-                    
-                    BlueToothCentral.centralManager.cancelPeripheralConnection(BlueToothCentral.peripheral)
-                    
-                    self.receiveStr += "\(sendText)\n"
-                }
-                
-                if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
-                    //esp8266是需要在尾部加上“\r\n”的，但是我这个rtthread自己是只要一个就好的，如果两个一起写的话，它是最后会多一个msh />的
-                    let sendStr = dropFirstTabStr(sendText: sendText, tabTempStr: tabTempStr)+"\n"
-                    print(sendStr.debugDescription)
-                    BlueToothCentral.peripheral.writeValue(sendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
-                }
-                
-                isTabReceive = false
-                self.tabTempStr = ""
-                self.rtthreadSendTextView.text = ""
-                return false
-                //为了手机的键盘也能打出类似的tab，我直接选了tab键上面的那一个的字符
-            } else if text == "\t" || text == "`" || text == "~" || text == "·" {
-                if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
-                    let sendStr = dropFirstTabStr(sendText: sendText, tabTempStr: tabTempStr)+"\t"
-                    print(sendStr.debugDescription)
-                    BlueToothCentral.peripheral.writeValue(sendStr.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
-                }
-                
-                isTabReceive = true
-                return false
-            } else if text == "" {
-                if sendText == self.tabTempStr {
-                    return false
-                }
+            var sendChar = text
+            if text == "" {
+                sendChar = "\u{8}"
             }
+            if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                print(text.debugDescription)
+                BlueToothCentral.peripheral.writeValue(sendChar.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
+            }
+            
+            return false
         }
         
         return true
         //true if the old text should be replaced by the new text; false if the replacement operation should be aborted.这个return还是蛮重要的，如果我这个是truem，那么这个方法执行完后，text的h值还是要在textview显示的。
         //return false就是我这个函数执行完后，这个text这个字符不会显示了。
     }
-    
-    func dropFirstTabStr(sendText: String, tabTempStr: String) -> String {
-        var mutatingSendStr = sendText
-        for _ in 0..<tabTempStr.count {
-            let _ = mutatingSendStr.removeFirst()
-        }
-        
-        return mutatingSendStr
-    }
+//
+//    func dropFirstTabStr(sendText: String, tabTempStr: String) -> String {
+//        var mutatingSendStr = sendText
+//        for _ in 0..<tabTempStr.count {
+//            let _ = mutatingSendStr.removeFirst()
+//        }
+//
+//        return mutatingSendStr
+//    }
 
     
     //MARK: - UIGesture delegate
@@ -905,12 +784,15 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
         self.receiveStr += ""
         
         if (showType == .bigger) {
-            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+            AudioServicesPlaySystemSound(1519)
+            UIView.animate(withDuration: 0.25, animations: { [unowned self] in
                 self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                 self.receiveTextView.alpha = 0
                 self.navigationController?.navigationBar.alpha = 0
                 self.tabBarController?.tabBar.alpha = 0
-            })
+            }) { (_) in
+//                AudioServicesPlaySystemSound(1519)
+            }
             
             UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
                 self.receiveBigTextView.transform = .identity
@@ -919,7 +801,7 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
 //                self.receiveStr += ""
             }
         } else {
-            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+            UIView.animate(withDuration: 0.25, animations: { [unowned self] in
                 self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                 self.receiveBigTextView.alpha = 0
             })
@@ -942,15 +824,17 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
         self.receiveStr += ""
     
         if showType == .rtthread {
-            
-            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+            AudioServicesPlaySystemSound(1519)
+            UIView.animate(withDuration: 0.25, animations: { [unowned self] in
                 self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                 self.receiveTextView.alpha = 0
 //                self.navigationController?.navigationBar.alpha = 0
                 self.tabBarController?.tabBar.alpha = 0
-            })
+            }) { (_) in
+//                AudioServicesPlaySystemSound(1519)
+            }
             
-            UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+            UIView.animate(withDuration: 0.45, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
                 self.rtthreadVisualBackground.transform = .identity
                 self.rtthreadVisualBackground.alpha = 1
             }) { (_) in
@@ -964,12 +848,12 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
             }
 //            rtthreadSendTextField.resignFirstResponder()
             
-            UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+            UIView.animate(withDuration: 0.25, animations: { [unowned self] in
                 self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                 self.rtthreadVisualBackground.alpha = 0
             })
             
-            UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+            UIView.animate(withDuration: 0.45, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
                 self.receiveTextView.transform = .identity
                 self.receiveTextView.alpha = 1
 //                self.navigationController?.navigationBar.alpha = 1
@@ -1399,13 +1283,18 @@ extension ViewController {
         }
         keyCommands.append(UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"))
         
-        return [UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"), UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"), UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"), UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"), UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"), UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"), UIKeyCommand(input: "a", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "ASCII"), UIKeyCommand(input: "d", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Decimal"), UIKeyCommand(input: "h", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Hexadecimal")]
+        return [UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"), UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"), UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"), UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"), UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"), UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"), UIKeyCommand(input: "a", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "ASCII"), UIKeyCommand(input: "d", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Decimal"), UIKeyCommand(input: "h", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Hexadecimal"),UIKeyCommand(input: "c", modifierFlags: [.command, .alternate], action: #selector(shortcuts(sender:)), discoverabilityTitle: "clear") ]
     }
     
     @objc func shortcuts(sender: UIKeyCommand) {
         switch sender.input {
         case "c":
+            if sender.modifierFlags.contains(.alternate) {
+                self.receiveStr = ""
+                return
+            }
             if BlueToothCentral.peripheral == nil && BlueToothCentral.isBlueOn {
+                AudioServicesPlaySystemSound(1519)
                 let scanTableController = storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
                 self.navigationController?.pushViewController(scanTableController, animated: true)
                 connectBtn.isHidden = true
@@ -1430,16 +1319,19 @@ extension ViewController {
                 self.showType.changeShowType(type: .rtthread)
                 self.receiveStr += ""
                 
-                UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                AudioServicesPlaySystemSound(1519)
+                UIView.animate(withDuration: 0.25, animations: { [unowned self] in
                     self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                     self.receiveTextView.alpha = 0
                     self.tabBarController?.tabBar.alpha = 0
                     
                     self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                     self.receiveBigTextView.alpha = 0
-                })
+                }) { (_) in
+//                    AudioServicesPlaySystemSound(1519)
+                }
                 
-                UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                UIView.animate(withDuration: 0.45, delay: 0.2, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
                     self.rtthreadVisualBackground.transform = .identity
                     self.rtthreadVisualBackground.alpha = 1
                 })  { (_) in
@@ -1456,7 +1348,7 @@ extension ViewController {
                 self.showType.changeShowType(type: .normal)
                 self.receiveStr += ""
                 
-                UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                UIView.animate(withDuration: 0.25, animations: { [unowned self] in
                     self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                     self.receiveBigTextView.alpha = 0
                     
@@ -1464,7 +1356,7 @@ extension ViewController {
                     self.rtthreadVisualBackground.alpha = 0
                 })
                 
-                UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                UIView.animate(withDuration: 0.45, delay: 0.2, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
                     self.receiveTextView.transform = .identity
                     self.receiveTextView.alpha = 1
                     self.tabBarController?.tabBar.alpha = 1
@@ -1484,16 +1376,19 @@ extension ViewController {
                 self.showType.changeShowType(type: .bigger)
                 self.receiveStr += ""
                 
-                UIView.animate(withDuration: 0.3, animations: { [unowned self] in
+                AudioServicesPlaySystemSound(1519)
+                UIView.animate(withDuration: 0.25, animations: { [unowned self] in
                     self.receiveTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                     self.receiveTextView.alpha = 0
                     self.tabBarController?.tabBar.alpha = 0
                     
                     self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
                     self.rtthreadVisualBackground.alpha = 0
-                })
+                }) { (_) in
+//                    AudioServicesPlaySystemSound(1519)
+                }
                 
-                UIView.animate(withDuration: 0.7, delay: 0.27, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                UIView.animate(withDuration: 0.45, delay: 0.2, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
                     self.receiveBigTextView.transform = .identity
                     self.receiveBigTextView.alpha = 1
                 })

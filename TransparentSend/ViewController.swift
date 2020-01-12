@@ -150,7 +150,7 @@ class ViewController: UIViewController {
             }, completion: { (_) in
                 //下面的delay只要写成0就可以了，因为它在上一个完成后调用。
                 UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 0, options: .curveEaseOut, animations: { [unowned self] in
-                    self.sendTextView.backgroundColor = UIColor.white
+                    self.sendTextView.backgroundColor = self.view.backgroundColor
                     }, completion: nil)
         })
         
@@ -514,13 +514,35 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
         if let error = error {
             print(error.localizedDescription)
         } else {
+            
             let valueData = characteristic.value!
-            let data = NSData(data: valueData)
+//            let data = NSData(data: valueData)
+//            var valueStr = data.description
+            
+            //https://www.jianshu.com/p/37daef564e14
+            //厉害了，以前我一直上面的两句话的，现在swift高级函数一句话搞定了诶，👍
+            var valueStr = valueData.reduce("", {$0 + String(format: "%02x", $1)})
+            print(valueStr)
+            
+            
             //由于接收到的数据是四个字节即八个16进制它自动会给出一个空格，所以不是一字节一个空格,要做一些处理
-            let valueStr = data.description.replacingOccurrences(of: "<", with: "").replacingOccurrences(of: ">", with: "").replacingOccurrences(of: " ", with: "")
+            valueStr = valueStr.replacingOccurrences(of: "<", with: "").replacingOccurrences(of: ">", with: "").replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "{", with: "").replacingOccurrences(of: "}", with: "")
 //            receiveStr += "Updated\n"
-//            print(valueStr)
+            
             guard valueStr.count > 0 else { return }
+            
+            //NB101返回的数据会有前缀length=18,bytes=0x，然后0x后面是18位，36个数字（或字母）,不过我也很疑惑，不应该length=18,bytes=0x直接也是十六进制显示的嘛？它到好，从Data转到String直接是字符了。
+            //
+            if valueStr.hasPrefix("length=") {
+                while valueStr.count > 0 && valueStr.first != "x" {
+                    valueStr.removeFirst()
+                }
+                if valueStr.count > 0 && valueStr.first == "x" {
+                    valueStr.removeFirst()
+                }
+            }
+            
+            
             //一下为了把收到的数据两个两个的分开，即一个字节一个字节分开处理
             var firstIndex = valueStr.startIndex
             var secondindex = valueStr.index(firstIndex, offsetBy: 1)
@@ -535,14 +557,14 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             //所以这里最后要加一句这个呀，本来没加
             valueStrs.append(String(valueStr[firstIndex...secondindex]))
             
-//            print("update: \(valueStrs)")
+            print("update: \(valueStrs)")
             
             var values = ""
             //收到的是16进制的String表示
             switch receiveType {
             case .Hexadecimal:
 //                String(str, radix: 16, uppercase: true)
-                values = valueStrs.joined(separator: " ").uppercased()
+                values = valueStrs.joined(separator: " ").uppercased() + "\n"
             case .Decimal:
                 var dataInt = [String]()
                 for uint8str in valueStrs {
@@ -550,7 +572,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                         dataInt.append("\(uint8)")
                     }
                 }
-                values = dataInt.joined(separator: " ")
+                values = dataInt.joined(separator: " ") + "\n"
             case .ASCII:
 //                print("Hexadecimal receive: " + valueStr)
                 var dataInt = [String]()
@@ -604,9 +626,8 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                         }
                     }
                 }
-                
-                self.receiveStr += "\(values)"
             }
+            self.receiveStr += "\(values)"
         }
     }
     

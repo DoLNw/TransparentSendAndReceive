@@ -248,6 +248,7 @@ class ViewController: UIViewController {
         
         self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
         self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+        self.rtthreadVisualBackground.alpha = 0
         
         let doubleTapGesture1 = UITapGestureRecognizer(target: self, action: #selector(doubleTapAct(_:)))
         doubleTapGesture1.numberOfTapsRequired = 2
@@ -1288,23 +1289,38 @@ extension ViewController {
     override var keyCommands: [UIKeyCommand]? {
         var keyCommands = [UIKeyCommand]()
         if BlueToothCentral.peripheral == nil && BlueToothCentral.isBlueOn {
-            keyCommands.append(UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"))
+//            keyCommands.append(UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"))
+//            keyCommands.append(UIKeyCommand(title: "connect", action: #selector(shortcuts(sender:)), input: "c"))
+            keyCommands.append(UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:))))
         } else {
-            keyCommands.append(UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"))
+//            keyCommands.append(UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"))
+            keyCommands.append(UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:))))
         }
         
         if self.showType != .rtthread {
-            keyCommands.append(UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"))
+//            keyCommands.append(UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"))
+            keyCommands.append(UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:))))
         }
         if self.showType != .normal {
-            keyCommands.append(UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"))
+//            keyCommands.append(UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"))
+            keyCommands.append(UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:))))
+            keyCommands.append(UIKeyCommand(input: "n", modifierFlags: .command, action: #selector(shortcuts(sender:))))
         }
         if self.showType != .bigger {
-            keyCommands.append(UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"))
+//            keyCommands.append(UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"))
+            keyCommands.append(UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:))))
         }
-        keyCommands.append(UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"))
+//        keyCommands.append(UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"))
+        keyCommands.append(UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:))))
+        keyCommands.append(UIKeyCommand(input: "a", modifierFlags: .alternate, action: #selector(shortcuts(sender:))))
+        keyCommands.append(UIKeyCommand(input: "d", modifierFlags: .alternate, action: #selector(shortcuts(sender:))))
+        keyCommands.append(UIKeyCommand(input: "h", modifierFlags: .alternate, action: #selector(shortcuts(sender:))))
+        keyCommands.append(UIKeyCommand(input: "c", modifierFlags: [.command, .alternate], action: #selector(shortcuts(sender:))))
         
-        return [UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"), UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"), UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"), UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"), UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"), UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"), UIKeyCommand(input: "a", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "ASCII"), UIKeyCommand(input: "d", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Decimal"), UIKeyCommand(input: "h", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Hexadecimal"),UIKeyCommand(input: "c", modifierFlags: [.command, .alternate], action: #selector(shortcuts(sender:)), discoverabilityTitle: "clear") ]
+        
+        return keyCommands
+        
+//        return [UIKeyCommand(input: "c", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "connect"), UIKeyCommand(input: "d", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "disConnect"), UIKeyCommand(input: "s", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showShell"), UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "shownormal"), UIKeyCommand(input: "b", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "showBigger"), UIKeyCommand(input: "e", modifierFlags: .command, action: #selector(shortcuts(sender:)), discoverabilityTitle: "edit"), UIKeyCommand(input: "a", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "ASCII"), UIKeyCommand(input: "d", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Decimal"), UIKeyCommand(input: "h", modifierFlags: .alternate, action: #selector(shortcuts(sender:)), discoverabilityTitle: "Hexadecimal"),UIKeyCommand(input: "c", modifierFlags: [.command, .alternate], action: #selector(shortcuts(sender:)), discoverabilityTitle: "clear") ]
     }
     
     @objc func shortcuts(sender: UIKeyCommand) {
@@ -1361,6 +1377,31 @@ extension ViewController {
             }
 
         case "w":
+            if self.showType != .normal {
+                if self.rtthreadSendTextView.isFirstResponder {
+                    self.rtthreadSendTextView.resignFirstResponder()
+                }
+                
+                self.showType.changeShowType(type: .normal)
+                self.receiveStr += ""
+                
+                UIView.animate(withDuration: 0.25, animations: { [unowned self] in
+                    self.receiveBigTextView.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.receiveBigTextView.alpha = 0
+                    
+                    self.rtthreadVisualBackground.transform = CGAffineTransform(scaleX: 0.01, y: 0.01)
+                    self.rtthreadVisualBackground.alpha = 0
+                })
+                
+                UIView.animate(withDuration: 0.45, delay: 0.2, usingSpringWithDamping: 0.6, initialSpringVelocity: 0.5, options: .curveEaseIn, animations: { [unowned self] in
+                    self.receiveTextView.transform = .identity
+                    self.receiveTextView.alpha = 1
+                    self.tabBarController?.tabBar.alpha = 1
+                }) { (_) in
+                }
+            }
+            
+        case "n":  //mac上的w是b被关闭用掉了
             if self.showType != .normal {
                 if self.rtthreadSendTextView.isFirstResponder {
                     self.rtthreadSendTextView.resignFirstResponder()

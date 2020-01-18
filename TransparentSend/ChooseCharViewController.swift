@@ -204,12 +204,15 @@ extension ChooseCharViewController {
     }
     
     override var keyCommands: [UIKeyCommand]? {
-        return [UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "close")]
+//        return [UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "close")]
+        return [UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(keyCommands(sender:))), UIKeyCommand(input: "n", modifierFlags: .command, action: #selector(keyCommands(sender:)))]
     }
     
     @objc func keyCommands(sender: UIKeyCommand) {
         switch sender.input {
         case "w":
+            self.performSegue(withIdentifier: "closeChoose", sender: nil)
+        case "n":
             self.performSegue(withIdentifier: "closeChoose", sender: nil)
         default:
             break

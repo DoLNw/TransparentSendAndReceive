@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,8 +13,8 @@
 		0217593D21C4D46300C6A8CD /* IntentsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0217593C21C4D46300C6A8CD /* IntentsUI.framework */; };
 		0217594021C4D46300C6A8CD /* IntentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0217593F21C4D46300C6A8CD /* IntentViewController.swift */; };
 		0217594321C4D46300C6A8CD /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0217594121C4D46300C6A8CD /* MainInterface.storyboard */; };
-		0217594721C4D46300C6A8CD /* SiriIntentUI.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0217593A21C4D46300C6A8CD /* SiriIntentUI.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		0217594A21C4D46300C6A8CD /* SiriIntent.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0217593121C4D46300C6A8CD /* SiriIntent.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0217594721C4D46300C6A8CD /* SiriIntentUI.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0217593A21C4D46300C6A8CD /* SiriIntentUI.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0217594A21C4D46300C6A8CD /* SiriIntent.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0217593121C4D46300C6A8CD /* SiriIntent.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0217595D21C4E57900C6A8CD /* BlueDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0217595C21C4E57900C6A8CD /* BlueDelegate.swift */; };
 		0220D9F822BE501B003BF0E6 /* ChooseCharViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0220D9F722BE501B003BF0E6 /* ChooseCharViewController.swift */; };
 		02EA0EFE21BE4E5300E831F8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02EA0EFD21BE4E5300E831F8 /* AppDelegate.swift */; };
@@ -84,6 +84,7 @@
 		02EA0F1321BE4F1200E831F8 /* Transition.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Transition.swift; sourceTree = "<group>"; };
 		02EA0F1421BE4F1200E831F8 /* ScanTableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScanTableViewController.swift; sourceTree = "<group>"; };
 		02EA0F1521BE4F1200E831F8 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
+		02EA492D23D315FE00B89B61 /* TransparentSend.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TransparentSend.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -164,6 +165,7 @@
 		02EA0EFC21BE4E5300E831F8 /* TransparentSend */ = {
 			isa = PBXGroup;
 			children = (
+				02EA492D23D315FE00B89B61 /* TransparentSend.entitlements */,
 				02EA0EFD21BE4E5300E831F8 /* AppDelegate.swift */,
 				02EA0F1521BE4F1200E831F8 /* Main.storyboard */,
 				0220D9F722BE501B003BF0E6 /* ChooseCharViewController.swift */,
@@ -349,11 +351,13 @@
 /* Begin PBXTargetDependency section */
 		0217594621C4D46300C6A8CD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 0217593921C4D46300C6A8CD /* SiriIntentUI */;
 			targetProxy = 0217594521C4D46300C6A8CD /* PBXContainerItemProxy */;
 		};
 		0217594921C4D46300C6A8CD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
+			platformFilter = ios;
 			target = 0217593021C4D46300C6A8CD /* SiriIntent */;
 			targetProxy = 0217594821C4D46300C6A8CD /* PBXContainerItemProxy */;
 		};
@@ -393,6 +397,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = JiaCheng.TransparentSend.SiriIntentUI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -412,6 +417,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = JiaCheng.TransparentSend.SiriIntentUI;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -431,6 +437,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = JiaCheng.TransparentSend.SiriIntent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -450,6 +457,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = JiaCheng.TransparentSend.SiriIntent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -506,7 +514,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -561,7 +569,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -576,7 +584,9 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TransparentSend/TransparentSend.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				DEVELOPMENT_TEAM = QXK2SWBXZ7;
 				INFOPLIST_FILE = TransparentSend/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.2;
@@ -586,6 +596,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = JiaCheng.TransparentSend;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -596,7 +607,9 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TransparentSend/TransparentSend.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				DEVELOPMENT_TEAM = QXK2SWBXZ7;
 				INFOPLIST_FILE = TransparentSend/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.2;
@@ -606,6 +619,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = JiaCheng.TransparentSend;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

@@ -188,12 +188,19 @@ extension ScanTableViewController {
     }
     
     override var keyCommands: [UIKeyCommand]? {
-        return [UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "close"), UIKeyCommand(input: "1", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 1"), UIKeyCommand(input: "!", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 2"), UIKeyCommand(input: "!", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 2"), UIKeyCommand(input: "3", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 3"), UIKeyCommand(input: "4", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 4"), UIKeyCommand(input: "5", modifierFlags: .command, action: #selector(keyCommands(sender:)), discoverabilityTitle: "connect 5")]
+        return [UIKeyCommand(input: "w", modifierFlags: .command, action: #selector(keyCommands(sender:))),
+                UIKeyCommand(input: "n", modifierFlags: .command, action: #selector(keyCommands(sender:))),
+                UIKeyCommand(input: "1", modifierFlags: .command, action: #selector(keyCommands(sender:))),
+                UIKeyCommand(input: "3", modifierFlags: .command, action: #selector(keyCommands(sender:))),
+                UIKeyCommand(input: "4", modifierFlags: .command, action: #selector(keyCommands(sender:))),
+                UIKeyCommand(input: "5", modifierFlags: .command, action: #selector(keyCommands(sender:)))]
     }
     
     @objc func keyCommands(sender: UIKeyCommand) {
         switch sender.input {
         case "w":
+            self.navigationController?.popViewController(animated: true)
+        case "n":
             self.navigationController?.popViewController(animated: true)
         case "1":
             if self.peripheralIDes.count >= 1 {

@@ -59,6 +59,8 @@ enum ShowType: String {
 }
 
 class ViewController: UIViewController {
+    var rtthreadTextRange: UITextRange?  //该属性是为了能够识别到键盘输入上下左右按钮而设置的
+    
     var showType: ShowType = .normal
     
     @IBOutlet weak var rtthreadmsh: UILabel!
@@ -227,6 +229,19 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         self.title = "UnConnected"
         self.titleLabel.text = "UnConnected"
+        
+        //下面是为了能够识别到键盘输入上下左右按键而设置的
+        self.rtthreadSendTextView.text = """
+          
+         
+        """
+        self.rtthreadTextRange = self.rtthreadSendTextView.selectedTextRange
+        self.rtthreadSendTextView.text = """
+          
+          
+          
+        """
+        self.rtthreadSendTextView.selectedTextRange = self.rtthreadTextRange
         
         NotificationCenter.default.addObserver(self, selector: #selector(willShow(notification:)), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(willHide(notification:)), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -418,7 +433,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             if BlueToothCentral.isBlueOn {
                 self.disConnectBtn.isHidden = true
                 self.connectBtn.isHidden = false
-                self.title = "UnConnected"
+                self.title =  "UnConnected"
                 self.titleLabel.text = "UnConnected"
             } else {
                 self.disConnectBtn.isHidden = true
@@ -521,9 +536,9 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
 //            var valueStr = data.description
             
             //https://www.jianshu.com/p/37daef564e14
-            //厉害了，以前我一直上面的两句话的，现在swift高级函数一句话搞定了诶，👍
+            //厉害了，以前我一直上面的两句话的，现在swift高级函数一句话搞定了诶，👍, 把data转成string
             var valueStr = valueData.reduce("", {$0 + String(format: "%02x", $1)})
-            print(valueStr)
+//            print(valueStr)
             
             
             //由于接收到的数据是四个字节即八个16进制它自动会给出一个空格，所以不是一字节一个空格,要做一些处理
@@ -558,7 +573,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             //所以这里最后要加一句这个呀，本来没加
             valueStrs.append(String(valueStr[firstIndex...secondindex]))
             
-            print("update: \(valueStrs)")
+//            print("update: \(valueStrs)")
             
             var values = ""
             //收到的是16进制的String表示
@@ -582,7 +597,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
                     if let uint8 = UInt8(uint8str, radix: 16) {
                         //如果我发送tab按键，它会自动补全代码，所以它会先发送回退键\b，tab键前面有几个单词就几个t回退键，我要处理好这个
                         if self.showType == .rtthread {
-                            if uint8 == 8 {
+                            if uint8 == 8 {  //退格键
 //                                if self.rtthreadStr.count >= 1 {
 //                                    self.rtthreadStr.removeLast()
                                 if dataInt.count > 0 {
@@ -705,8 +720,52 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
         
         return true
     }
+    
+//    func textViewDidChange(_ textView: UITextView) {
+//        print("33")
+//        print(textView.selectedTextRange)
+//    }
+    //下面是为了能够识别到键盘输入上下左右按钮而设置的,好像这个方法在输入数字字母时不会触发？
+    func textViewDidChangeSelection(_ textView: UITextView) {
+        if textView.tag == 321 {    //msh的那个textView,其实现在用textField也可以了呀，不想改了
+            if let selectedRange = textView.selectedTextRange {
+//                print(range)
+                let offset = textView.offset(from: textView.beginningOfDocument, to: selectedRange.start)
+//                print(offset)
+                //上1， 下7， 左3， 右5
+                
+                switch offset {
+                case 1://上
+                    if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                        BlueToothCentral.peripheral.writeValue(Data([0x1b, 0x5b, 0x41]), for: BlueToothCentral.characteristic, type: writeType)
+                    }
+                case 7://下
+                if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                    BlueToothCentral.peripheral.writeValue(Data([0x1b, 0x5b, 0x42]), for: BlueToothCentral.characteristic, type: writeType)
+                }
+                case 3://左
+                if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                    BlueToothCentral.peripheral.writeValue(Data([0x1b, 0x5b, 0x44]), for: BlueToothCentral.characteristic, type: writeType)
+                }
+                case 5://右
+                if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
+                    BlueToothCentral.peripheral.writeValue(Data([0x1b, 0x5b, 0x43]), for: BlueToothCentral.characteristic, type: writeType)
+                }
+                default:
+                    break
+                }
+                
+                
+                
+                
+                textView.selectedTextRange = self.rtthreadTextRange //注意其实这个设置后也会触发一下这个方法，不过offset是4，触发就触发了吧，好像也没什么关系呀
+            }
+        }
+    }
+    
     //下面是实时监测输入的数字来实现return按键，因为它不像UITextField有shouldreturn代理。
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+//        print(range)
         if textView.tag == 111 {
             if text == "\n" {
                 textView.resignFirstResponder()
@@ -763,11 +822,12 @@ extension ViewController: UITextFieldDelegate, UIGestureRecognizerDelegate, UITe
             }
         } else if textView.tag == 321 {
             var sendChar = text
+//            print(sendChar.debugDescription)
             if text == "" {
                 sendChar = "\u{8}"
             }
             if BlueToothCentral.peripheral != nil, let writeType = self.writeType {
-                print(text.debugDescription)
+//                print(text.debugDescription)
                 BlueToothCentral.peripheral.writeValue(sendChar.data(using: .utf8)!, for: BlueToothCentral.characteristic, type: writeType)
             }
             

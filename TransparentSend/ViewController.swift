@@ -11,6 +11,14 @@ import AVFoundation
 import CoreBluetooth
 import AudioToolbox
 
+// import AudioToolbox
+// 普通短震，3D Touch 中 Peek 震动反馈
+// AudioServicesPlaySystemSound(1519);
+// 普通短震，3D Touch 中 Pop 震动反馈
+// AudioServicesPlaySystemSound(1520);
+// 连续三次短震
+// AudioServicesPlaySystemSound(1521);
+
 enum SendAndReceiveType: String {
     case Decimal
     case Hexadecimal
@@ -93,11 +101,11 @@ class ViewController: UIViewController {
         }
     }
     
-    //目前服务还没有给出选择，特征还是要给出一个隐藏的数字的，为了方便。
+    // 目前服务还没有给出选择，特征还是要给出一个隐藏的数字的，为了方便。
     @IBOutlet weak var charNumSelectTextLabel: UITextField!
     @IBOutlet weak var serviceNumSelectLabel: UITextField!
 
-    //留了两个label本来做信号指示的，但是貌似label的background不能动画，先留一下吧。。。。
+    // 留了两个label本来做信号指示的，但是貌似label的background不能动画，先留一下吧。。。。
     @IBOutlet weak var receiveCleraBtn: UIButton!
     @IBAction func sendClearAct(_ sender: UIButton) {
         self.sendTextView.text = ""
@@ -304,9 +312,15 @@ class ViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
+        print("viewWillAppear")
+        
         if BlueToothCentral.peripheral == nil {
             self.connectBtn.isHidden = false
         }
+        // 若是从选择属性那个界面下来，我现在是直接往下拉下来了，所以不能触发返场的方法了，只能在viewwillappear的时候检测一遍
+        // 但是直接拉下来这个viewwillappear也不会调用的。。。只能在那个界面通过window找到主界面，调用correctBtn()了
+//        correctBtn()
+        
         
 //        if showType != .normal {
 //            self.navigationController?.navigationBar.alpha = 0
@@ -323,7 +337,6 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func startBlueTooth() {
         guard BlueToothCentral.isBlueOn else { return }
-
         
         let scanTableController = storyboard?.instantiateViewController(withIdentifier: "ScanTableController") as! ScanTableViewController
         self.navigationController?.pushViewController(scanTableController, animated: true)
@@ -419,6 +432,7 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         print("didDisconnectPeripheral: ")
+        // 连续三次短震
         AudioServicesPlaySystemSound(1521)
         BlueToothCentral.peripheral = nil
         BlueToothCentral.characteristic = nil
@@ -459,16 +473,16 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard BlueToothCentral.peripheral == peripheral else { return }
-        DispatchQueue.main.sync { [unowned self] in
-            if let text = self.serviceNumSelectLabel.text, let num = Int(text), ((peripheral.services?.count)!>=num) {
-                BlueToothCentral.writeServiceNum = num
-            } else {
-                BlueToothCentral.writeServiceNum = 1
-                if self.serviceNumSelectLabel.text != "" {
-                    self.serviceNumSelectLabel.text = "1"
-                }
-            }
-        }
+//        DispatchQueue.main.sync { [unowned self] in
+//            if let text = self.serviceNumSelectLabel.text, let num = Int(text), ((peripheral.services?.count)!>=num) {
+//                BlueToothCentral.writeServiceNum = num
+//            } else {
+//                BlueToothCentral.writeServiceNum = 1
+//                if self.serviceNumSelectLabel.text != "" {
+//                    self.serviceNumSelectLabel.text = "1"
+//                }
+//            }
+//        }
         
         for service in peripheral.services! {
             if let _ = BlueToothCentral.characteristics[service] {
@@ -488,41 +502,41 @@ extension ViewController: CBCentralManagerDelegate, CBPeripheralDelegate {
             }
         }
         
-        //此处last还是first有讲究吗？我记得之前一直设置订阅订阅不上去的，怎么解决的?这里要sync而不是async
-        DispatchQueue.main.sync { [unowned self] in
-            if let text = self.charNumSelectTextLabel.text, let num = Int(text) {
-                if BlueToothCentral.services.count == BlueToothCentral.writeServiceNum {
-                    if (service.characteristics?.count)! >= num {
-                        BlueToothCentral.writeCharNum = num
-                    } else {
-                        BlueToothCentral.writeCharNum = 1
-                        if self.charNumSelectTextLabel.text != "" {
-                            self.charNumSelectTextLabel.text = "1"
-                        }
-                    }
-                }
-            } else {
-                BlueToothCentral.writeCharNum = 1
-                if self.charNumSelectTextLabel.text != "" {
-                    self.charNumSelectTextLabel.text = "1"
-                }
-            }
-        }
-        
-        if BlueToothCentral.writeServiceNum != 0 && BlueToothCentral.writeCharNum != 0 && BlueToothCentral.characteristic == nil {
-            BlueToothCentral.characteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
-            BlueToothCentral.readCharacteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
-            BlueToothCentral.notifyCharacteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
-            
-            BlueToothCentral.readServiceNum = BlueToothCentral.writeServiceNum
-            BlueToothCentral.readCharNum = BlueToothCentral.writeCharNum
-            BlueToothCentral.notifyServiceNum = BlueToothCentral.writeServiceNum
-            BlueToothCentral.notifyCharNum = BlueToothCentral.writeCharNum
-            
-            DispatchQueue.main.async {
-                self.correctBtn()
-            }
-        }
+//        //此处last还是first有讲究吗？我记得之前一直设置订阅订阅不上去的，怎么解决的?这里要sync而不是async
+//        DispatchQueue.main.sync { [unowned self] in
+//            if let text = self.charNumSelectTextLabel.text, let num = Int(text) {
+//                if BlueToothCentral.services.count == BlueToothCentral.writeServiceNum {
+//                    if (service.characteristics?.count)! >= num {
+//                        BlueToothCentral.writeCharNum = num
+//                    } else {
+//                        BlueToothCentral.writeCharNum = 1
+//                        if self.charNumSelectTextLabel.text != "" {
+//                            self.charNumSelectTextLabel.text = "1"
+//                        }
+//                    }
+//                }
+//            } else {
+//                BlueToothCentral.writeCharNum = 1
+//                if self.charNumSelectTextLabel.text != "" {
+//                    self.charNumSelectTextLabel.text = "1"
+//                }
+//            }
+//        }
+//
+//        if BlueToothCentral.writeServiceNum != 0 && BlueToothCentral.writeCharNum != 0 && BlueToothCentral.characteristic == nil {
+//            BlueToothCentral.characteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
+//            BlueToothCentral.readCharacteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
+//            BlueToothCentral.notifyCharacteristic = BlueToothCentral.characteristics[BlueToothCentral.services[BlueToothCentral.writeServiceNum-1]]![BlueToothCentral.writeCharNum-1]
+//
+//            BlueToothCentral.readServiceNum = BlueToothCentral.writeServiceNum
+//            BlueToothCentral.readCharNum = BlueToothCentral.writeCharNum
+//            BlueToothCentral.notifyServiceNum = BlueToothCentral.writeServiceNum
+//            BlueToothCentral.notifyCharNum = BlueToothCentral.writeCharNum
+//
+//            DispatchQueue.main.async {
+//                self.correctBtn()
+//            }
+//        }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -1122,6 +1136,7 @@ extension ViewController {
                     return nil
                 }
             }
+            print(uint8s)
             return Data(uint8s)
         case .Hexadecimal:
             for number in numbers {
@@ -1131,6 +1146,7 @@ extension ViewController {
                     return nil
                 }
             }
+            print(uint8s)
             return Data(uint8s)
         case .ASCII:
             //终于知道了，转义字符从text中读取的时候，会给它前面默认加一个"\"变成非转义的"\"所以就出现了我下面的很多错误了
@@ -1208,6 +1224,7 @@ extension ViewController {
 //            print(sendStrCopy)
 //            print(sendStrCopy.debugDescription)
             
+            print(sendStrCopy)
             return sendStrCopy.data(using: .utf8)
         }
     }
@@ -1225,37 +1242,14 @@ extension ViewController {
     
     
     func correctBtn() {
+        guard BlueToothCentral.peripheral != nil else {
+            return
+        }
+        
         propertyStr = ""
-        if (BlueToothCentral.readCharacteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
-            if propertyStr != "" {
-                self.propertyStr += "\n(\(BlueToothCentral.readServiceNum), \(BlueToothCentral.readCharNum)) Read"
-            } else {
-                self.propertyStr += "(\(BlueToothCentral.readServiceNum), \(BlueToothCentral.readCharNum)) Read"
-            }
-            self.receiveBtn.isEnabled = true
-            self.receiveBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
-            
-        } else {
-            print("cannot read")
-            self.receiveBtn.isEnabled = false
-            self.receiveBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
-        }
-        
-        
-        if (BlueToothCentral.notifyCharacteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
-            BlueToothCentral.peripheral.setNotifyValue(true, for: BlueToothCentral.notifyCharacteristic)
-            if propertyStr != "" {
-                self.propertyStr += "\n(\(BlueToothCentral.notifyServiceNum), \(BlueToothCentral.notifyCharNum)) Notify"
-            } else {
-                self.propertyStr += "(\(BlueToothCentral.notifyServiceNum), \(BlueToothCentral.notifyCharNum)) Notify"
-            }
-        } else {
-            print("cannot notify")
-        }
-        
         
         self.writeType = nil
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.writeWithoutResponse.rawValue) != 0 {
+        if BlueToothCentral.characteristic != nil && (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.writeWithoutResponse.rawValue) != 0 {
             self.writeType = CBCharacteristicWriteType.withoutResponse
             if propertyStr != "" {
                 self.propertyStr += "\n(\(BlueToothCentral.writeServiceNum), \(BlueToothCentral.writeCharNum)) WriteWithoutResponse"
@@ -1265,7 +1259,7 @@ extension ViewController {
         } else {
             print("cannot writeWithoutResponse")
         }
-        if (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.write.rawValue) != 0 {
+        if BlueToothCentral.characteristic != nil && (BlueToothCentral.characteristic.properties.rawValue & CBCharacteristicProperties.write.rawValue) != 0 {
             self.writeType = CBCharacteristicWriteType.withResponse
             if propertyStr != "" {
                 self.propertyStr += "\n(\(BlueToothCentral.writeServiceNum), \(BlueToothCentral.writeCharNum)) WriteWithResponse"
@@ -1283,6 +1277,34 @@ extension ViewController {
         } else {
             self.senBtn.isEnabled = true
             self.senBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
+        }
+        
+        
+        if BlueToothCentral.readCharacteristic != nil && (BlueToothCentral.readCharacteristic.properties.rawValue & CBCharacteristicProperties.read.rawValue) != 0 {
+            if propertyStr != "" {
+                self.propertyStr += "\n(\(BlueToothCentral.readServiceNum), \(BlueToothCentral.readCharNum)) Read"
+            } else {
+                self.propertyStr += "(\(BlueToothCentral.readServiceNum), \(BlueToothCentral.readCharNum)) Read"
+            }
+            self.receiveBtn.isEnabled = true
+            self.receiveBtn.backgroundColor = UIColor(red: 0.196, green: 0.604, blue: 0.357, alpha: 0.67)
+            
+        } else {
+            print("cannot read")
+            self.receiveBtn.isEnabled = false
+            self.receiveBtn.backgroundColor = UIColor.black.withAlphaComponent(0.37)
+        }
+        
+        
+        if BlueToothCentral.notifyCharacteristic != nil && (BlueToothCentral.notifyCharacteristic.properties.rawValue & CBCharacteristicProperties.notify.rawValue) != 0 {
+            BlueToothCentral.peripheral.setNotifyValue(true, for: BlueToothCentral.notifyCharacteristic)
+            if propertyStr != "" {
+                self.propertyStr += "\n(\(BlueToothCentral.notifyServiceNum), \(BlueToothCentral.notifyCharNum)) Notify"
+            } else {
+                self.propertyStr += "(\(BlueToothCentral.notifyServiceNum), \(BlueToothCentral.notifyCharNum)) Notify"
+            }
+        } else {
+            print("cannot notify")
         }
     }
 }

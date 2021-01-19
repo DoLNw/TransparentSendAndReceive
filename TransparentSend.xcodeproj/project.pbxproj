@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02028E8D25B56118009FB79B /* PickerData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02028E8C25B56118009FB79B /* PickerData.swift */; };
 		021758B821C3627300C6A8CD /* DesignateInputModeTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021758B721C3627300C6A8CD /* DesignateInputModeTextView.swift */; };
 		0217592C21C4CE8500C6A8CD /* BlueToothCentral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0217592B21C4CE8500C6A8CD /* BlueToothCentral.swift */; };
 		0217593421C4D46300C6A8CD /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0217593321C4D46300C6A8CD /* IntentHandler.swift */; };
@@ -61,6 +62,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		02028E8C25B56118009FB79B /* PickerData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickerData.swift; sourceTree = "<group>"; };
 		021758B721C3627300C6A8CD /* DesignateInputModeTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignateInputModeTextView.swift; sourceTree = "<group>"; };
 		0217592B21C4CE8500C6A8CD /* BlueToothCentral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueToothCentral.swift; sourceTree = "<group>"; };
 		0217593121C4D46300C6A8CD /* SiriIntent.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SiriIntent.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -171,6 +173,7 @@
 				0220D9F722BE501B003BF0E6 /* ChooseCharViewController.swift */,
 				02EA0F0F21BE4F1200E831F8 /* ViewController.swift */,
 				0217592B21C4CE8500C6A8CD /* BlueToothCentral.swift */,
+				02028E8C25B56118009FB79B /* PickerData.swift */,
 				021758B721C3627300C6A8CD /* DesignateInputModeTextView.swift */,
 				02EA0F1421BE4F1200E831F8 /* ScanTableViewController.swift */,
 				02EA0F1121BE4F1200E831F8 /* TransAnimatorBack.swift */,
@@ -335,6 +338,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0217592C21C4CE8500C6A8CD /* BlueToothCentral.swift in Sources */,
+				02028E8D25B56118009FB79B /* PickerData.swift in Sources */,
 				0220D9F822BE501B003BF0E6 /* ChooseCharViewController.swift in Sources */,
 				02EA0F1A21BE4F1200E831F8 /* Transition.swift in Sources */,
 				02EA0F1621BE4F1200E831F8 /* ViewController.swift in Sources */,

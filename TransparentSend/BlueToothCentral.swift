@@ -25,8 +25,8 @@ class BlueToothCentral {
     static var services = [CBService]()
     
     
-    
-    
+    // 存的时候是存的没有0的，用的时候都是-1来提取
+    // 0 代表当前该写、读取、通知特征还没有
     static var writeServiceNum = 0
     static var writeCharNum = 0
     static var readServiceNum = 0
